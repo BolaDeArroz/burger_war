@@ -3,7 +3,6 @@
 <arg name="namespace" default="red_bot"/>
 <arg name="map_file"  default="$(find map_server)/maps/field_map.yaml"/>
 
-<group ns="red_bot">
   <node pkg="tf" type="static_transform_publisher" name="base_link_pub"
   	args="0 0 0 0 0 0 $(arg namespace)/base_footprint $(arg namespace)/base_link 10"/>
   <node pkg="tf" type="static_transform_publisher" name="scan_link_pub"
@@ -71,6 +70,7 @@
     <rosparam file="$(find navigation)/param/dwa_local_planner_params_$(arg model).yaml" command="load" />
     <remap from="cmd_vel" to="$(arg cmd_vel_topic)"/>
     <remap from="odom" to="$(arg odom_topic)"/>
+
     <param name="DWAPlannerROS/min_vel_x" value="0.0" if="$(arg move_forward_only)" />
 
     <param name="global_costmap/robot_base_frame" value="$(arg namespace)/base_footprint"/>
@@ -84,5 +84,8 @@
 
   </node>
 
-</group>
+  <group ns="/">
+    <node pkg="rviz" type="rviz" name="rviz"
+	  args="-d $(find navigation)/launch/default.rviz"/>
+  </group>
 </launch>
