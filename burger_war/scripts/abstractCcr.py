@@ -3,7 +3,8 @@
 import rospy
 from abc import ABCMeta, abstractmethod
 from geometry_msgs.msg import Twist
-from ccr_msgs.msg import Bumper
+#can not use
+#from ccr_msgs.msg import Bumper
 from sensor_msgs.msg import Image
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
@@ -38,6 +39,7 @@ class AbstractCcr(object):
             self.usonic_left_sub = rospy.Subscriber('us_left', LaserScan, self.usonicLeftCallback)
             self.usonic_right_sub = rospy.Subscriber('us_right', LaserScan, self.usonicRightCallback)
 
+        """
         # bumper subscribre
         if use_bumper:
             # bumper state
@@ -45,6 +47,7 @@ class AbstractCcr(object):
             self.left_bumper = False
             self.right_bumper = False
             self.bumper_sub = rospy.Subscriber('bumper', Bumper, self.bumperCallback)
+        """
 
         # camera subscribver
         # please uncoment out if you use camera
@@ -76,11 +79,13 @@ class AbstractCcr(object):
     def usonicRightCallback(self, data):
         self.usonic[1] = data
 
+    """
     # bumper topic call back sample
     # update bumper state
     def bumperCallback(self, data):
         self.left_bumper = data.left.state
         self.right_bumper = data.right.state
+    """
 
     # camera image call back sample
     # comvert image topic to opencv object and show
