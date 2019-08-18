@@ -9,7 +9,7 @@
     </include>
 
     <!-- my program node -->
-    <node pkg="burger_war" type="attackrun.py" name="AttackRunBot" output="screen"> 
+    <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
 
