@@ -12,6 +12,8 @@
 ros::Subscriber sub_;
 image_transport::Publisher  pub_image;
 cv_bridge::CvImage bridge_;
+ros::Publisher pub;
+std_msgs::Float32MultiArray array;
 
 #define nTARGETCOLOR    2
 CvScalar targetColor[nTARGETCOLOR] = {
@@ -91,9 +93,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         detection = sakuteki(cv_msg, targetColor[1]);
     }
 
-    ros::NodeHandle n;
-    ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("array", 5);
-    std_msgs::Float32MultiArray array;
     array.data.resize(5);
     array.data[0] = detection;
 
@@ -115,7 +114,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         array.data[3] = cv_msg->image.cols;
 	array.data[4] = cv_msg->image.rows;
 
-	ROS_DEBUG("detection=%d, move_x=%d, size=%d", detection, move_x, xmax-xmin);
+	ROS_INFO("detection=%d, move_x=%d, size=%d", detection, move_x, xmax-xmin);
     }
 
     pub.publish(array);
@@ -131,12 +130,14 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
 int main(int argc, char * argv[])
 {
-  ros::init(argc, argv, "bla_camera");
+  ros::init(argc, argv, "burger_sakuteki");
   ros::NodeHandle n("~");
   ROS_INFO("exec bla_camra");
 
+  pub = n.advertise<std_msgs::Float32MultiArray>("/red_bot/array", 5);
+
   // callback関数の登録
-  sub_ = n.subscribe("/in_image", 10, &imageCallback);
+  sub_ = n.subscribe("/red_bot/image_raw", 10, &imageCallback);
 
   // publishserオブジェクトの生成
   // サンプルではImageデータをpublishする

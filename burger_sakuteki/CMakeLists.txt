@@ -3,6 +3,8 @@ project(burger_sakuteki)
 
 add_compile_options(-std=c++11)
 
+set(OpenCV_DIR /usr/share/OpenCV/)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
@@ -27,8 +29,8 @@ include_directories(
 ${OpneCV_INCLUDE_DIRS}
   )
 
-add_executable(camera_subscriber src/camera_subscriber.cpp)
-target_link_libraries(camera_subscriber
+add_executable(burger_sakuteki src/burger_sakuteki.cpp)
+target_link_libraries(burger_sakuteki
   ${catkin_LIBRARIES}
 ${OpenCV_LIBRARIES}
 )

@@ -17,14 +17,14 @@ import attackrun as atk
 class AttackStrategy():
     def __init__(self):
         self.name = "red_bot"
-        self.tf = tf.TransformListener()
+        self.tf_listener = tf.TransformListener()
         self.detection_data = True
         self.scan_data = LaserScan()
         self.my_map = None
         self.last_time = rospy.Time.now()
         self.detection_time = 0
 
-        self.mov_sub = rospy.Subscriber("move_x", Float32MultiArray, self.move_callback)
+        self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.move_callback)
 
     def run(self, move, size):
         print("[Strategy]")
@@ -41,29 +41,30 @@ class AttackStrategy():
             res = self.strategy()
 
             if res != 0x00:
-                print("[Retire]")
+                #print("[Retire]")
                 break
 
             r.sleep()
 
         if res == 0x01:
-            mx, my = calc_local_to_map(self.last_local[0], self.last_local[1], self.my_map[0], self.my_map[1], self.my_map[2])
+            print("[Attack]")            
+            mx, my = local_to_map(self.last_local[0], self.last_local[1], self.my_map[0], self.my_map[1], self.my_map[2])
 
             atk.AttackBot().attack_war(mx, my, self.last_local[2])
-            print("[Attack]")
+
 
     def strategy(self):
         t = rospy.Time.now()
 
         dt = (t - self.last_time).to_sec()
 
-        self.my_map = get_my_map(self.tf, self.name)
+        self.my_map = get_my_map(self.tf_listener, self.name)
 
-        if (dt < 0.1) or (self.my_map is None):
-            print("[Through]")
+        if (dt < 0.001) or (self.my_map is None):
+            print("[Through]", dt)
             return 0x00
 
-        x, y, ds, th = calc_enemy_local(move, size, 0)
+        x, y, ds, th = calc_enemy_local(self.move_data, self.size_data, 0)
 
         dx, dy = x - self.last_local[0], y - self.last_local[1]
 
@@ -73,32 +74,33 @@ class AttackStrategy():
         self.last_time = t
         self.detection_time += dt
 
-        if (not self.detection_data) or (d > 1.5) or (vx * vx + vy * vy > 0.5 * 0.5):
+        if (not self.detection_data) or (ds > 1.5) or (vx * vx + vy * vy > 0.5 * 0.5):
             return 0x02
 
-        elif (self.detection_time > 2.0) or (d < 0.5):
+        elif (self.detection_time > 2.0) or (ds < 0.5):
             return 0x01
 
     def move_callback(self, data):
-        self.detection_data = data[0]
-        self.move_data = data[1]
-        self.size_data = data[2]
-        self.width_data = data[3]
-        self.height_data = data[4]
+        self.detection_data = int(data.data[0]) != 0
+        self.move_data = int(data.data[1])
+        self.size_data = int(data.data[2])
+        self.width_data = int(data.data[3])
+        self.height_data = int(data.data[4])
 
     def scan_callback(self, data):
         self.scan_data = data
 
 
-def get_my_map(tf, name):
+def get_my_map(tf_listener, name):
     try:
-        trans, quaternion = tf.lookupTransform(name +"/map", name +"/base_link", rospy.Time())
+        trans, quaternion = tf_listener.lookupTransform(name +"/map", name +"/base_link", rospy.Time())
 
-        euler = tf.transformations.euler_from_quaternion((quaternion.x, quaternion.y, quaternion.z, quaternion.w))
+        euler = tf.transformations.euler_from_quaternion(quaternion)
 
         return trans[0], trans[1], euler[2]
 
-    except:
+    except Exception as e:
+        print(e)
         return None
 
 

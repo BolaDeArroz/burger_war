@@ -92,7 +92,6 @@ class AttackBot():
         self.camera_model = image_geometry.PinholeCameraModel()
         self.camera_model.fromCameraInfo(data)
 
-    # 
 
 
     def set_goal(self, x, y, yaw):
@@ -112,8 +111,7 @@ class AttackBot():
         goal.target_pose.pose.orientation.w = q[3]
 
         self.client.send_goal(goal)
-        # recovery
-        self.recoverMove(goal)
+        """
         #wait = self.client.wait_for_result()
         wait = self.client.wait_for_server()
         if not wait:
@@ -121,11 +119,12 @@ class AttackBot():
             rospy.signal_shutdown("Action server not available!")
         else:
             return self.client.get_result()        
+        """
 
 
-    def attack_war(self):
+    def attack_war(self, enemey_position_x, enemey_position_y, enemey_position_yaw):
         TRACKING_MODE = False
-        r = rospy.Rate(5) # change speed 5fps
+        r = rospy.Rate(30) # change speed 30fps
         listener = tf.TransformListener()
         now = rospy.Time.now()
         timeout_dur = 20  # default time out
@@ -133,6 +132,21 @@ class AttackBot():
         start_time = now
         #listener.waitForTransform('/' + self.name +"/map",self.name +"/base_link", rospy.Time(),rospy.Duration(4.0))   
         while not rospy.is_shutdown():
+            # failed move_base
+            if self.client.get_state() == actionlib_msgs.msg.GoalStatus.ABORTED:
+                print('ABORTED')
+                recovery_abort()
+            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.REJECTED:
+                print('REJECTED')
+                self.client.cancel_goal()
+                recovery_reject()
+                break
+            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.SUCCEEDED:
+                print('SUCCEEDED')
+            """
+            elif self.get_state == actionlib_msgs.msg.GoalStatus.LOST:
+                recover_lost()
+            """
             now = rospy.Time.now()
             # change strategy by possession marker info 
             obtain_marker_list = check_possession_marker(self.war_state)
@@ -144,6 +158,8 @@ class AttackBot():
                 print('Time Out!!!')
                 self.client.cancel_goal()
                 break
+            if self.image is None:
+                continue
             # change strategy by tracking info 
             tracking_info = get_tracking_info(self.image)
             print(tracking_info)
@@ -170,7 +186,7 @@ class AttackBot():
                 TRACKING_MODE = False
             # change navigation to tracking
             if TRACKING_MODE is False:
-                result = self.set_goal(0.7,0.35,-3.1415/4)
+                result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
                 #print('++++++++++++++++++', result)
             else:
                 command = 99
@@ -199,131 +215,33 @@ class AttackBot():
         self.current_global_plan=data
         rospy.loginfo(str(data.poses[0].pose.position.x))
 
-    def recoverMove(self,goal):   
-        rospy.loginfo("recover")
-        #現在地点取得用リスナー
-        listener = tf.TransformListener()
-        listener.waitForTransform(self.name +"/map",self.name +"/base_link", rospy.Time(), rospy.Duration(4.0))
-        # map座標系の現在位置をｔｆから取得し、前地点に設定
-        pre_position, pre_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-        pre_time=rospy.Time.now()
-        rospy.sleep(0.5)
-        
-        rospy.loginfo("fuga")
-        #loop
-        while self.client.get_state()==actionlib.SimpleGoalState.ACTIVE:
-            rospy.loginfo(self.client.get_state())
-            #map座標系の現在位置をｔｆから取得し、現在地点に設定
-            cur_position, cur_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-            #移動距離計算
-            moved_dist = math.sqrt((cur_position[0]-pre_position[0])**2 + (cur_position[1]-pre_position[1])**2 )
-            rospy.loginfo("moved_dist="+str(moved_dist))
 
-            #角度差分計算
-            rotated_rad = math.fabs(cur_orientation[2]-pre_orientation[2])
-            rospy.loginfo("rotated_rad="+str(rotated_rad))
-            #移動距離が一定値(m)を下回る場合
-            if moved_dist <= 0.5:
-                #経過時間計算
-                cur_time=rospy.Time.now()
-                rospy.loginfo("cur_time"+str(cur_time.secs)+"."+str(cur_time.nsecs))
-                rospy.loginfo("pre_time"+str(pre_time.secs)+"."+str(pre_time.nsecs))
-                elapsed_time_sec=float((cur_time.secs+cur_time.nsecs/(1000*1000*1000))-(pre_time.secs+pre_time.nsecs/(1000*1000*1000)))
-                rospy.loginfo("elapsed_time_sec="+str(elapsed_time_sec))
-                rospy.loginfo("1/(moved_dist+0.01)*elapsed_time_sec="+str(1/(moved_dist+0.01)*elapsed_time_sec))
-                #1/移動距離*経過時間がしきい値を超える場合(要計算)
-                if ((1/(moved_dist+0.01))*elapsed_time_sec)>=20 and rotated_rad <=0.5:
-                    #現在のplan保存
-                    current_plan=self.current_global_plan
-
-                    rospy.loginfo("robot is stucked") 
-                    #send_goal actionキャンセル
-                    self.client.cancel_goal()
-                    rospy.loginfo("current goal is canceled")
-
-                    
-                    #一定距離バック
-                    rospy.loginfo("back")
-                    back_cmd=Twist()
-                    back_cmd.linear.x=-0.15
-                    back_cmd.linear.y=0
-                    back_cmd.angular.z=0
-                    end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+1.0)
-                    while not rospy.is_shutdown():
-                        rospy.loginfo("linear.x="+str(back_cmd.linear.x)+"linear.y="+str(back_cmd.linear.y))
-                        self.vel_pub.publish(back_cmd)
-                        if end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)):
-                            break
-                        else:
-                            rospy.sleep(0.1)
-                    #停止
-                    rospy.loginfo("stop")
-                    stop_cmd=Twist()
-                    stop_cmd.linear.x=0
-                    stop_cmd.linear.y=0
-                    stop_cmd.angular.z=0
-                    self.vel_pub.publish(stop_cmd)
-                    rospy.sleep(0.5)
-
-                    #global_planから中間地点の座標を得る
-                    #rospy.loginfo(str(self.current_global_plan.poses[0].pose.position.x))
-                    #middle_pose=current_plan.poses[int(math.floor(len(current_plan.poses)/2))].pose
-                    middle_pose=current_plan.poses[0].pose
-
-                    #中間地点方向に回転===================
-                    #map座標系の現在位置をｔｆから取得し、現在地点に設定
-                    listener.waitForTransform(self.name +"/map",self.name +"/base_link", rospy.Time(), rospy.Duration(4.0))
-                    a_position, a_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-                    rospy.loginfo("a_position.x="+str(a_position[0])+"a_position.y="+str(a_position[1]))
-                    rospy.loginfo("middle_pose.x="+str(middle_pose.position.x)+"middle_pose.y="+str(middle_pose.position.y))
-                    rospy.loginfo("mod_middle_pose.x="+str(-middle_pose.position.y)+"mod_middle_pose.y="+str(middle_pose.position.x))
-
-                    x1=a_position[0]
-                    y1=a_position[1]
-                    x2=middle_pose.position.y
-                    y2=-middle_pose.position.x
-                    #中間地点向きの角度算出
-                    rad=math.atan2(y2-y1,x2-x1)
-                    rospy.loginfo(str(rad))
-                    #角度をマップ座標系に変換
-                    map_rad=rad + a_orientation[2]
-                    print(map_rad, 'ssssssssssssssssssss')
-                    print(a_orientation[2])
-                    #現在位置からnavigation(回転)
-                    self.set_goal(x1,y1,map_rad)
-
-                    #中間地点をゴールに設定
-                    rospy.loginfo("set_middle_goal")
-                    middle_goal = MoveBaseGoal()
-                    middle_goal.target_pose.header.frame_id = self.name + "/odom"
-                    middle_goal.target_pose.header.stamp = rospy.Time.now()
-                    middle_goal.target_pose.pose=middle_pose
-                    rospy.loginfo("middle_goal_ori_x="+str(middle_goal.target_pose.pose.orientation.x))
-                    rospy.loginfo("middle_goal_ori_y="+str(middle_goal.target_pose.pose.orientation.y))
-                    rospy.loginfo("middle_goal_ori_z="+str(middle_goal.target_pose.pose.orientation.z))
-                    rospy.loginfo("middle_goal_ori_w="+str(middle_goal.target_pose.pose.orientation.w))                    
-
-                    #self.client.send_goal(middle_goal)
-                    #self.recoverMove(middle_goal)
-
-                    #経過時間リセット
-                    pre_time=rospy.Time.now()
-                    #元のゴールに再設定
-                    self.client.send_goal(goal)
-                    self.recoverMove(goal)
-                    #map座標系の現在位置をｔｆから取得し、前地点座標更新
-                    pre_position, pre_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-            #移動距離が一定値を下回らない場合
+    def pub_vel(self,vel_x=0,vel_y=0,vel_z=0,time_sec=0.5):
+        cmd_vel=Twist()
+        cmd_vel.linear.x=vel_x
+        cmd_vel.linear.y=vel_y
+        cmd_vel.linear.z=vel_z
+        end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+time_sec)
+        while not rospy.is_shutdown():
+            rospy.loginfo("cmd_vel.x="+str(cmd_vel.linear.x)+"cmd_vel.y="+str(cmd_vel.linear.y))
+            self.vel_pub.publish(cmd_vel)
+            if end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)):
+                break
             else:
-                #経過時間リセット
-                pre_time=rospy.Time.now()
-                #前地点座標更新
-                pre_position=cur_position
-                pre_orientaion=cur_orientation
+                rospy.sleep(0.1)
 
-            #sleep
-            rospy.sleep(0.5)
 
+    def recovery_abort(self):   
+        #一定距離バック
+        pub_vel(self,vel_x=-0.15,vel_y=0,vel_z=0,time_sec=1.0)
+        #停止
+        pub_vel(self,vel_x=0,vel_y=0,vel_z=0,time_sec=0.5)
+
+    def recovery_reject():
+        # TODO
+        pass
+
+        
         
 
 if __name__ == '__main__':
