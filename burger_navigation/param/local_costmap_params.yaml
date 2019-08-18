@@ -1,6 +1,6 @@
 local_costmap:
-  global_frame: /odom
-  robot_base_frame: /base_footprint
+  global_frame: odom
+  robot_base_frame: base_footprint
 
   robot_radius: 0.05
   inflation_radius: 0.1
