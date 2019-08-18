@@ -15,10 +15,6 @@
     <node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
-    <node pkg="burger_sakuteki" type="camera_subscriber.py" name="image_subscriber" output="screen"> 
-        <param name="robot_name" value="$(arg robot_name)" />
-        <param name="in_image" value="/$(arg robot_name)/image_raw" />
-    </node>
 
 
 

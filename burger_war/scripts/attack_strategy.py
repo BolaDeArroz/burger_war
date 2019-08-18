@@ -9,7 +9,7 @@ import tf
 
 from cv_bridge import CvBridge
 from sensor_msgs.msg import LaserScan
-from std_msgs.msg import Bool, Float32MultiArray
+from std_msgs.msg import Float32MultiArray
 
 import attackrun as atk
 
@@ -41,7 +41,6 @@ class AttackStrategy():
             res = self.strategy()
 
             if res != 0x00:
-                #print("[Retire]")
                 break
 
             r.sleep()
@@ -51,17 +50,20 @@ class AttackStrategy():
             mx, my = local_to_map(self.last_local[0], self.last_local[1], self.my_map[0], self.my_map[1], self.my_map[2])
 
             atk.AttackBot().attack_war(mx, my, self.last_local[2])
+        
+        elif res == 0x02:
+            print("[Retire]")
 
 
     def strategy(self):
         t = rospy.Time.now()
 
         dt = (t - self.last_time).to_sec()
+        print("[Strategy]", dt)
 
         self.my_map = get_my_map(self.tf_listener, self.name)
 
         if (dt < 0.001) or (self.my_map is None):
-            print("[Through]", dt)
             return 0x00
 
         x, y, ds, th = calc_enemy_local(self.move_data, self.size_data, 0)
@@ -75,9 +77,11 @@ class AttackStrategy():
         self.detection_time += dt
 
         if (not self.detection_data) or (ds > 1.5) or (vx * vx + vy * vy > 0.5 * 0.5):
+            print("[Strategy]", self.detection_data, ds, vx * vx + vy * vy)
             return 0x02
 
         elif (self.detection_time > 2.0) or (ds < 0.5):
+            print("[Strategy]", self.detection_time, ds)
             return 0x01
 
     def move_callback(self, data):
@@ -105,8 +109,10 @@ def get_my_map(tf_listener, name):
 
 
 def calc_enemy_local(move, size, width):
-    ds = (-1.1492 * size + 1891.2) / 1000
-    th = (math.pi / 2) - (math.pi / 3) * (move / 400.0)
+    area = size / 2 * math.pi
+
+    ds = (-1.1492 * area + 1891.2) / 1000
+    th = (math.pi / 2) - (math.pi / 3) * (move / 320.0)
 
     x = ds * math.cos(th)
     y = ds * math.sin(th)

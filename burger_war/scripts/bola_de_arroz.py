@@ -17,12 +17,11 @@ def bola_de_arroz_main():
         while not rospy.is_shutdown():
             # searching enemy
             if changed:   
-                move_x,area=navi_bot.strategy()  
+                move_x,size=navi_bot.strategy()
                 print('navi')
                 changed = False
             else:
-                area=600
-                attack_strategy.run(move_x, area)
+                attack_strategy.run(move_x, size)
                 changed = True
                 print('attack')
             r.sleep()

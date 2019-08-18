@@ -42,7 +42,7 @@ class NaviBot():
 
     def enemy_detect_callback(self,array):
         print("EnemyDetect", array.data[0], self.is_enemy_detected)	   
-        if array.data[2] >= 5 and int(array.data[0]!=0):
+        if array.data[2] >= 11 and int(array.data[0]!=0):
             self.is_enemy_detected = True
         self.array=array
 
@@ -117,7 +117,7 @@ class NaviBot():
             [-0.4, 1.0, 0],
             #[0.0, 1.4,-3.1415/4],#左角(初期位置から)
             [ 0.4, 1.0,-3.1415/4],
-            [ 0.65, 0.70,-3.1415/4],
+            [ 0.8, 0.60,-3.1415/4],
             [ 1.1, 0.3,-3.1415/4*2],
             #[ 1.25, 0.0,-3.1415/4*3],#対角(初期位置から)
             [ 1.1 ,-0.3,-3.1415/4*3],
@@ -175,6 +175,7 @@ class NaviBot():
 
             if self.client.get_state()==actionlib_msgs.msg.GoalStatus.ABORTED:
                 self.recovery_abort()
+                self.client.cancel_goal()
                 
             if self.is_enemy_detected:
                 rospy.loginfo("enemy_detected!!")
