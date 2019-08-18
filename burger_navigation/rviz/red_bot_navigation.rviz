@@ -8,17 +8,9 @@ Panels:
         - /Status1
         - /TF1/Frames1
         - /TF1/Tree1
-        - /Map1
         - /Planner Plan1
         - /Global Map1
-        - /Global Map1/Costmap1
-        - /Global Map1/Planner1
-        - /Local Map1
         - /Local Map1/Polygon1
-        - /Local Map1/Planner1
-        - /Amcl Particles1
-        - /Goal1
-        - /PointCloud21
       Splitter Ratio: 0.5
     Tree Height: 814
   - Class: rviz/Selection
@@ -246,7 +238,7 @@ Visualization Manager:
           Color: 0; 0; 0
           Enabled: true
           Name: Polygon
-          Topic: /red_bot/move_base/local_costmap/footprint
+          Topic: /red_bot/move_base/global_costmap/footprint
           Unreliable: false
           Value: true
         - Alpha: 0.699999988
@@ -282,6 +274,36 @@ Visualization Manager:
           Topic: /red_bot/move_base/DWAPlannerROS/local_plan
           Unreliable: false
           Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Autocompute Value Bounds:
+            Max Value: 0.0143999401
+            Min Value: -0.00894810539
+            Value: true
+          Axis: Z
+          Channel Name: intensity
+          Class: rviz/PointCloud2
+          Color: 255; 255; 255
+          Color Transformer: AxisColor
+          Decay Time: 0
+          Enabled: false
+          Invert Rainbow: false
+          Max Color: 255; 255; 255
+          Max Intensity: 4096
+          Min Color: 0; 0; 0
+          Min Intensity: 0
+          Name: DWACost
+          Position Transformer: XYZ
+          Queue Size: 10
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.0199999996
+          Style: Flat Squares
+          Topic: /red_bot/move_base/DWAPlannerROS/cost_cloud
+          Unreliable: false
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: false
       Enabled: true
       Name: Local Map
     - Alpha: 1
@@ -314,36 +336,6 @@ Visualization Manager:
       Shape: Arrow
       Topic: /red_bot/move_base/current_goal
       Unreliable: false
-      Value: true
-    - Alpha: 1
-      Autocompute Intensity Bounds: true
-      Autocompute Value Bounds:
-        Max Value: 0.0160247721
-        Min Value: -0.00215960899
-        Value: true
-      Axis: Z
-      Channel Name: intensity
-      Class: rviz/PointCloud2
-      Color: 255; 255; 255
-      Color Transformer: AxisColor
-      Decay Time: 0
-      Enabled: true
-      Invert Rainbow: false
-      Max Color: 255; 255; 255
-      Max Intensity: 4096
-      Min Color: 0; 0; 0
-      Min Intensity: 0
-      Name: PointCloud2
-      Position Transformer: XYZ
-      Queue Size: 10
-      Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.0199999996
-      Style: Flat Squares
-      Topic: /red_bot/move_base/DWAPlannerROS/cost_cloud
-      Unreliable: false
-      Use Fixed Frame: true
-      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
