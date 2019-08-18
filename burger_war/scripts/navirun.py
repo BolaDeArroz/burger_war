@@ -103,7 +103,7 @@ class NaviBot():
                 rospy.loginfo("elapsed_time_sec="+str(elapsed_time_sec))
                 rospy.loginfo("1/(moved_dist+0.01)*elapsed_time_sec="+str(1/(moved_dist+0.01)*elapsed_time_sec))
                 #1/移動距離*経過時間がしきい値を超える場合(要計算)
-                if ((1/(moved_dist+0.01))*elapsed_time_sec)>=40 and rotated_rad <=0.5:
+                if ((1/(moved_dist+0.01))*elapsed_time_sec)>=400 and rotated_rad <=0.5:
                     #現在のplan保存
                     current_plan=self.current_global_plan
 
@@ -205,26 +205,26 @@ class NaviBot():
         waypoints = [
             [-1.1, 0.3, 3.1415/4],
             [-0.7, 0.7, 3.1415/4],
-            [-0.4, 1.0, 0],
+            [-0.4, 1.0, 0]#,
             #[0.0, 1.4,-3.1415/4],#左角(初期位置から)
-            [ 0.4, 1.0,-3.1415/4],
-            [ 0.7, 0.7,-3.1415/4],
-            [ 1.1, 0.3,-3.1415/4*2],
+            #[ 0.4, 1.0,-3.1415/4],
+            #[ 0.7, 0.7,-3.1415/4],
+            #[ 1.1, 0.3,-3.1415/4*2],
             #[ 1.25, 0.0,-3.1415/4*3],#対角(初期位置から)
-            [ 1.1 ,-0.3,-3.1415/4*3],
-            [ 0.7 ,-0.7,-3.1415/4*3],
-            [ 0.4 ,-1.0,3.1415],
+            #[ 1.1 ,-0.3,-3.1415/4*3],
+            #[ 0.7 ,-0.7,-3.1415/4*3],
+            #[ 0.4 ,-1.0,3.1415],
             #[ 0.0 ,-1.4,3.1415/4*3],#右角(初期位置から)
-            [-0.4 ,-1.0,3.1415/4*3],
-            [-0.7 ,-0.7,3.1415/4*3],
-            [-1.1 ,-0.3,3.1415/4*2]
+            #[-0.4 ,-1.0,3.1415/4*3],
+            #[-0.7 ,-0.7,3.1415/4*3],
+            #[-1.1 ,-0.3,3.1415/4*2]
         ]
         #self.setGoal(-1.15,0.0,3.1415/4)
 
         for waypoint in waypoints:
             self.setGoal(waypoint[0],waypoint[1],waypoint[2])
-            if waypoint[0] == -0.4:
-                break
+            #if waypoint[0] == -0.4:
+            #    break
             #while not rospy.is_shutdown():
             #     now = rospy.Time.now()
             #     listener.waitForTransform(self.name +"/map",self.name +"/base_link", now, rospy.Duration(4.0))

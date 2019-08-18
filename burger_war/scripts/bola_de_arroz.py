@@ -3,13 +3,14 @@
 
 from navirun import NaviBot
 from attackrun import AttackBot
+from attack_strategy import AttackStrategy
 
 import rospy
 
 
 def bola_de_arroz_main():
     navi_bot = NaviBot()
-    attack_bot = AttackBot()
+    attack_strategy = AttackStrategy()
     r = rospy.Rate(5) # change speed 5fps
     changed = True
     try:
@@ -20,7 +21,7 @@ def bola_de_arroz_main():
                 print('navi')
                 changed = False
             else:
-                attack_bot.attack_war()
+                attack_strategy.run(0, 0)
                 changed = True
                 print('attack')
             r.sleep()
