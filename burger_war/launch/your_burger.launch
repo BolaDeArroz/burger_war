@@ -13,8 +13,6 @@
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
 
-    <include file="$(find navigation)/launch/navigation.launch"/>
-
     <!-- END my program node -->
 
     <!-- End of your space  -->
