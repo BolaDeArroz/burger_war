@@ -16,8 +16,6 @@
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
 
-
-
     <!-- END my program node -->
 
     <!-- End of your space  -->
