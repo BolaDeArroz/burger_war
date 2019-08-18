@@ -44,7 +44,7 @@ class AttackBot():
 
         # lidar scan subscriber
         self.scan = LaserScan()
-        self.lidar_sub = rospy.Subscriber('scan', LaserScan, self.lidar_callback)
+        self.lidar_sub = rospy.Subscriber('/{}/scan'.format(self.name), LaserScan, self.lidar_callback)
 
         # camera subscribver
         # for convert image topic to opencv obj
@@ -125,7 +125,7 @@ class AttackBot():
     def attack_war(self, enemey_position_x, enemey_position_y, enemey_position_yaw):
         TRACKING_MODE = False
         r = rospy.Rate(30) # change speed 30fps
-        listener = tf.TransformListener()
+        # listener = tf.TransformListener()
         now = rospy.Time.now()
         timeout_dur = 20  # default time out
         # start time log
@@ -135,11 +135,11 @@ class AttackBot():
             # failed move_base
             if self.client.get_state() == actionlib_msgs.msg.GoalStatus.ABORTED:
                 print('ABORTED')
-                recovery_abort()
+                self.recovery_abort()
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.REJECTED:
                 print('REJECTED')
                 self.client.cancel_goal()
-                recovery_reject()
+                self.recovery_reject()
                 break
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.SUCCEEDED:
                 print('SUCCEEDED')
@@ -233,11 +233,11 @@ class AttackBot():
 
     def recovery_abort(self):   
         #一定距離バック
-        pub_vel(self,vel_x=-0.15,vel_y=0,vel_z=0,time_sec=1.0)
+        self.pub_vel(vel_x=-0.15,vel_y=0,vel_z=0,time_sec=1.0)
         #停止
-        pub_vel(self,vel_x=0,vel_y=0,vel_z=0,time_sec=0.5)
+        self.pub_vel(vel_x=0,vel_y=0,vel_z=0,time_sec=0.5)
 
-    def recovery_reject():
+    def recovery_reject(self):
         # TODO
         pass
 
