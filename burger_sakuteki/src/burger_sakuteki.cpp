@@ -132,17 +132,19 @@ int main(int argc, char * argv[])
 {
   ros::init(argc, argv, "burger_sakuteki");
   ros::NodeHandle n("~");
+  std::string param = "";
+  n.getParam("robot_name", param);
   ROS_INFO("exec bla_camra");
 
-  pub = n.advertise<std_msgs::Float32MultiArray>("/red_bot/array", 5);
+  pub = n.advertise<std_msgs::Float32MultiArray>("/" + param + "/array", 5);
 
   // callback関数の登録
-  sub_ = n.subscribe("/red_bot/image_raw", 10, &imageCallback);
+  sub_ = n.subscribe("/" + param + "/image_raw", 10, &imageCallback);
 
   // publishserオブジェクトの生成
   // サンプルではImageデータをpublishする
   image_transport::ImageTransport it(n);
-  pub_image = it.advertise("/red_bot/out_image", 1);
+  pub_image = it.advertise("/" + param + "/out_image", 1);
 
   // loop処理
   ros::spin();

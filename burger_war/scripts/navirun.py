@@ -102,6 +102,9 @@ class NaviBot():
             listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         except (tf.LookupException, tf.ConnectivityException):
             rospy.logerr("tf_err")
+        except Exception as e:
+            # I think this error that tf2_ros.TransformException
+            print('SSSSSSSSSSSSSSSSSSSs', e)
         listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         
 
