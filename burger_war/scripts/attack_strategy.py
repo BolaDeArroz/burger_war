@@ -16,7 +16,9 @@ import attackrun as atk
 
 class AttackStrategy():
     def __init__(self):
-        self.name = "red_bot"
+        # bot name 
+        robot_name=rospy.get_param('~robot_name')
+        self.name = robot_name
         self.tf_listener = tf.TransformListener()
         self.detection_data = True
         self.scan_data = LaserScan()
@@ -76,7 +78,7 @@ class AttackStrategy():
         self.last_time = t
         self.detection_time += dt
 
-        if (not self.detection_data) or (ds > 1.5) or (vx * vx + vy * vy > 0.5 * 0.5):
+        if (not self.detection_data) or (ds > 2.0) or (vx * vx + vy * vy > 0.5 * 0.5):
             print("[Strategy]", self.detection_data, ds, vx * vx + vy * vy)
             return 0x02
 
