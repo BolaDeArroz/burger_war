@@ -16,47 +16,16 @@ Rufusというソフトがシンプルでおすすめです。　https://rufus.i
 
 インストール方法はインターネット上にたくさん解説があるのでご覧ください。
 
-## Window10の上でUbuntuを動かす
-Windows Subsystem for Linuxという、Windows上でLinuxが動く仕組みがあります。
-これを使うと、Windows上のソフトの感覚でLinuxをインストールできます。
+外付けUSBメモリ等にインストールする方法もあります。(参考 https://freepc.jp/post-34573)
+ブートローダーのインストール先を外付けUSBドライブにしないと内蔵HDDの環境に影響与えてしまうので注意してください。
 
-まず、Microsoft StoreでUbuntu 16.04を検索してインストールします。
+## Windowの上でUbuntuを動かす
+VirtualPCやVMwareを使うことでWindows上にも環境を作れます。
+参考
+https://github.com/gogo5nta/burger_war/blob/master/info.md
 
-次に、Windows Subsystem for Linuxの機能を有効かします。
-参考）https://www.atmarkit.co.jp/ait/articles/1608/08/news039.html
-
-スタートメニューからUbuntuを起動してください。
-下記のコマンドを入力してください。
-```
-sudo apt-get update
-sudo apt-get upgrade
-```
-
-次に、GUIアプリが使えるようにWindows側にVcXsrvというソフトを入れます。
-参考）https://www.atmarkit.co.jp/ait/articles/1812/06/news040.html
-
-Ubuntuのコンソールに下記を入力してください。
-```
-echo "export DISPLAY=:0.0" >> ~/.bashrc
-source ~/.bashrc
-sudo apt install x11-apps
-```
-
-https://www.atmarkit.co.jp/ait/articles/1806/28/news043.html
-を参考に日本語化を進めます。
-```
-sudo apt -y install language-pack-ja
-sudo update-locale LANG=ja_JP.UTF8
-```
-ここでCtrl+D を押して終了させて、もう一度Ubuntu起動します。
-```
-sudo dpkg-reconfigure tzdata
-# Asia -> Tokyoを選んでください
-sudo apt -y install manpages-ja manpages-ja-dev
-```
-
-
+Windows subaystem for Linux使った方法はGazeboが動作しない場合があり、難しいかもしれません。
 
 ## VPSを使う
-
-## ROS Development Studioを使う
+参考
+https://github.com/hotic06/burger_war/blob/master/doc/CloudInstall.md

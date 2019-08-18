@@ -3,15 +3,19 @@
   <arg name="robot_name" default=""/>
     <!-- You can change control program  -->
 
+    <!-- Launch Navigation -->
+    <include file="$(find burger_navigation)/launch/your_burger_navigation_sample.launch">
+        <arg name="robot_name" value="$(arg robot_name)" />
+    </include>
 
-
-
-    <!-- sample program node -->
-    <!--node pkg="burger_war" type="randomRun.py" name="randomRun" output="screen"/-->
-    <!-- END sample program node -->
+    <!-- my program node -->
+    <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
+        <param name="robot_name" value="$(arg robot_name)" />
+    </node>
 
     <include file="$(find navigation)/launch/navigation.launch"/>
 
+    <!-- END my program node -->
 
     <!-- End of your space  -->
 </launch>
