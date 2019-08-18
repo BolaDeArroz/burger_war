@@ -92,19 +92,19 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
     }
 
     ros::NodeHandle n;
-    ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("array", 4);
+    ros::Publisher pub = n.advertise<std_msgs::Float32MultiArray>("array", 5);
     std_msgs::Float32MultiArray array;
-    array.data.resize(3);
+    array.data.resize(5);
     array.data[0] = detection;
 
-    ROS_INFO("detection=%d", detection);
+    //ROS_INFO("detection=%d", detection);
 
     if(detection == true)
     {
         int x = (xmin + xmax)/2;
         int y = (ymin + ymax)/2;
         // デバッグ用描画(Black Circle)
-        cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
+       //cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
 
         // 敵と正面に向き合うための幅()
         int move_x = x-(cv_msg->image.cols/2);
@@ -112,8 +112,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         // detection, move_x, xmax-xminをmsgパラーメタとして送信
 	array.data[1] = move_x;
 	array.data[2] = xmax-xmin;
+        array.data[3] = cv_msg->image.cols;
+	array.data[4] = cv_msg->image.rows;
 
-	ROS_INFO("detection=%d, move_x=%d, size=%d", detection, move_x, xmax-xmin);
+	ROS_DEBUG("detection=%d, move_x=%d, size=%d", detection, move_x, xmax-xmin);
     }
 
     pub.publish(array);
@@ -124,7 +126,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
   //////////////////////////////////////////
 
   /* CvImage型をトピックに変換してpublish */
-  pub_image.publish(cv_msg->toImageMsg());
+  //pub_image.publish(cv_msg->toImageMsg());
 }
 
 int main(int argc, char * argv[])
