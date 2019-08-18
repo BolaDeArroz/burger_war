@@ -21,7 +21,7 @@ CvScalar targetColor[nTARGETCOLOR] = {
     CV_RGB(0,255,0)     // 敵のQRコード枠色(green)
 };
 
-int tolerance = 15;             // 色許容値
+int tolerance = 30;             // 色許容値
 int xmin = 0, ymin = 0;
 int xmax = 0, ymax = 0;
 
@@ -103,7 +103,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         int x = (xmin + xmax)/2;
         int y = (ymin + ymax)/2;
         // デバッグ用描画(Black Circle)
-       //cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
+       cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
 
         // 敵と正面に向き合うための幅()
         int move_x = x-(cv_msg->image.cols/2);
@@ -125,7 +125,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
   //////////////////////////////////////////
 
   /* CvImage型をトピックに変換してpublish */
-  //pub_image.publish(cv_msg->toImageMsg());
+  pub_image.publish(cv_msg->toImageMsg());
 }
 
 int main(int argc, char * argv[])
@@ -142,7 +142,7 @@ int main(int argc, char * argv[])
   // publishserオブジェクトの生成
   // サンプルではImageデータをpublishする
   image_transport::ImageTransport it(n);
-  pub_image = it.advertise("out_image", 1);
+  pub_image = it.advertise("/red_bot/out_image", 1);
 
   // loop処理
   ros::spin();
