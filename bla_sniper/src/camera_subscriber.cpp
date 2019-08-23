@@ -34,7 +34,7 @@ int main(int argc, char * argv[])
   ROS_INFO("exec bla_camra");
 
   // callback関数の登録
-  sub_ = n.subscribe("/in_image", 10, &imageCallback);
+  sub_ = n.subscribe("in_image", 10, &imageCallback);
 
   // publishserオブジェクトの生成
   // サンプルではImageデータをpublishする
