@@ -249,11 +249,13 @@ class NaviBot():
             while not self.is_enemy_detected:
                 waypoint=wall_run_waypoints[next_waypoint_idx]
                 rospy.loginfo(str(next_waypoint_idx))
-                if self.go_waypoint(waypoint,is_passing=True) == "SUCCESS":
+                if self.go_waypoint(waypoint,is_passing=False) == "SUCCESS":
                     if next_waypoint_idx+1 >= len(wall_run_waypoints):
                         next_waypoint_idx=0
                     else:
-                        next_waypoint_idx+=1    
+                        next_waypoint_idx+=1
+                    self.swing_behavior()#回転して敵を探す
+
         else:#MARKER
             r=rospy.Rate(5)
             while not self.is_enemy_detected:
