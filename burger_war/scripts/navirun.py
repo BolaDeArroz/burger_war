@@ -3,15 +3,17 @@
 import rospy
 import random
 import math
+import json
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Path
-from std_msgs.msg import Bool,Float32MultiArray
+from std_msgs.msg import Bool,Float32MultiArray,String
 import tf
 
 
 import actionlib
 import actionlib_msgs
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+
 # Ref: https://hotblackrobotics.github.io/en/blog/2018/01/29/action-client-py/
 
 #from std_msgs.msg import String
@@ -19,12 +21,34 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 #from cv_bridge import CvBridge, CvBridgeError
 #import cv2
 
+def check_possession_marker(war_state):
+    obtain_targets_list = []
+    targets_list = []
+    if war_state is None:
+        return obtain_targets_list
+    #print(dir(war_state.data))
+    #print(war_state.data)
+    json_war_state = json.loads(war_state.data)
+    for key in json_war_state:
+        if key == 'scores':
+            # TODO
+            pass
+        elif key == 'targets':
+            targets_list = json_war_state[key]
+            break
+    for target in targets_list:
+        for key in target:
+            if key == 'player' and target[key] == 'r':
+                obtain_targets_list.append(target['name'])
+    return obtain_targets_list
 
 class NaviBot():
     def __init__(self):
         # bot name 
         robot_name=rospy.get_param('~robot_name')
         self.name = robot_name
+        #robot_size=rospy.get_param('~side')
+        #self.name = robot_side
         
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
@@ -37,11 +61,19 @@ class NaviBot():
 
         self.tf_listener=tf.TransformListener()
 
+        #warstate subscriber
+        self.war_state = None
+        self.war_state_sub = rospy.Subscriber("/"+self.name+"/war_state", String, self.warstate_callback)
+
+
     def enemy_detect_callback(self,array):
-        print("EnemyDetect", array.data[0], self.is_enemy_detected)	   
+        #print("EnemyDetect", array.data[0], self.is_enemy_detected)	   
         #if array.data[2] >= 11 and int(array.data[0]!=0):
         #    self.is_enemy_detected = True
         self.array=array
+
+    def warstate_callback(self, data):
+        self.war_state = data
 
     def setGoal(self,x,y,yaw):
         self.client.wait_for_server()
@@ -68,25 +100,35 @@ class NaviBot():
         #else:
         #    return self.client.get_result()  
 
-    def pub_vel(self,vel_x=0,vel_y=0,vel_z=0,time_sec=0.5):
+    #
+    def pub_vel(self,lin_x=0,lin_y=0,ang_z=0,time_sec=0.5):
         cmd_vel=Twist()
-        cmd_vel.linear.x=vel_x
-        cmd_vel.linear.y=vel_y
-        cmd_vel.linear.z=vel_z
+        cmd_vel.linear.x=lin_x
+        cmd_vel.linear.y=lin_y
+        cmd_vel.angular.z=ang_z
         end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+time_sec)
         while not rospy.is_shutdown():
-            rospy.loginfo("cmd_vel.x="+str(cmd_vel.linear.x)+"cmd_vel.y="+str(cmd_vel.linear.y))
+            rospy.loginfo("cmd_vel.linear.x="+str(cmd_vel.linear.x)+"cmd_vel.linear.y="+str(cmd_vel.linear.y)+"cmd_vel.angular.z="+str(cmd_vel.angular.z))
             self.vel_pub.publish(cmd_vel)
-            if end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)):
+            if (not self.is_enemy_detected) and (end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000))):
                 break
             else:
                 rospy.sleep(0.1)
+        self.vel_pub.publish(Twist())#stop
 
-    def recovery_abort(self):   
+    def recovery_abort_behavior(self):   
+        print("recovery_abort_behavior")
         #一定距離バック
         self.pub_vel(-0.15,0,0,0.8)
-        #停止
-        self.pub_vel(0,0,0,0.5)
+
+    def swing_behavior(self):
+        print("swing_behavior")
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/2/5,0.5)
+        #反時計方向に180度回転
+        self.pub_vel(0,0,3.1415/10,1.0)
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/2/5,0.5)
 
     def calc_nearest_waypoint_idx(self,position,waypoints):
         nearest_waypoint_idx=0
@@ -98,7 +140,7 @@ class NaviBot():
                 nearest_waypoint_idx=idx_waypoint
         return nearest_waypoint_idx
 
-    def go_waypoint(self,waypoint):
+    def go_waypoint(self,waypoint,is_passing=False):
         r = rospy.Rate(5) # change speed 5fps
         self.setGoal(waypoint[0],waypoint[1],waypoint[2])
         rospy.loginfo("state="+str(self.client.get_state()))
@@ -112,8 +154,8 @@ class NaviBot():
             # map座標系の現在位置をｔｆから取得する
             position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
             
-            # ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
-            if(math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25):
+            # is_passingが有効の時、ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
+            if is_passing and (math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25) :
                 ret="SUCCESS"
                 break
             
@@ -122,7 +164,7 @@ class NaviBot():
 
 
         if self.client.get_state()==actionlib_msgs.msg.GoalStatus.ABORTED:
-            self.recovery_abort()
+            self.recovery_abort_behavior()
             self.client.cancel_goal()
             ret="FAILED"
             
@@ -135,7 +177,42 @@ class NaviBot():
         print("go_waypoint_result=",ret)
         return ret
 
-    def strategy(self):
+    def strategy(self,navirun_mode="WALL"):
+        #壁沿い走行時の地点リスト
+        wall_run_waypoints = [
+            [-0.96,0.27,3.1415/4],
+            [-0.81,0.40,3.1415/4],
+            [-0.36,0.83,0],
+            [0.44,0.90,-3.1415/4],
+            [0.85,0.47,-3.1415/4*2],
+            [0.94,-0.33,-3.1415/4*3],
+            [0.45,-0.87,-3.1415],
+            [-0.46,-0.91,3.1415/4*3],
+            [-0.86,-0.47,3.1415/4*2]
+        ]
+  
+        #フィールドマーカ読み取り時の地点リスト(side=r)
+        marker_run_waypoints_r =[
+            {"name":u"Tomato_N","pos":[0.77,0.5,3.1415]}, #Tomato_N
+            {"name":u"Tomato_S","pos":[0.0,0.5,0.0]},     #Tomato_S
+            {"name":u"Omelette_N","pos":[0.77,-0.5,3.1415]},#Omelette_N
+            {"name":u"Omelette_S","pos":[0.0,-0.5,3.1415/2]},#Omelette_S
+            {"name":u"Pudding_N","pos":[0.0,0.5,3.1415]},  #Pudding_N
+            {"name":u"Pudding_S","pos":[-0.77,0.5,0.0]},  #Pudding_S
+            {"name":u"OctopusWiener_N","pos":[0.0,-0.5,3.1415]},#OctopusWiener_N
+            {"name":u"OctopusWiener_S","pos":[-0.77,-0.5,0.0]},#OctopusWiener_S
+            {"name":u"FriedShrimp_N","pos":[0.5,0.0,3.1415]},#FriedShrimp_N
+            {"name":u"FriedShrimp_E","pos":[0.0,-0.5,3.1415/2]},#FriedShrimp_E
+            {"name":u"FriedShrimp_W","pos":[0.0,0.5,-3.1415/2]},#FriedShrimp_W
+            {"name":u"FriedShrimp_S","pos":[-0.5,0.0,0.0]},#FriedShrimp_S
+        ]
+        #フィールドマーカ読み取り時の地点リスト(side=b)
+        marker_run_waypoints_b=[{"name":elem["name"],"pos":[-elem["pos"][0],-elem["pos"][1],elem["pos"][2]+3.1414]} for elem in marker_run_waypoints_r]
+        print(marker_run_waypoints_b)
+        
+        #nameでリスト変更
+        if self.name=="red_bot":marker_run_waypoints=marker_run_waypoints_r
+        else:marker_run_waypoints=marker_run_waypoints_b
 
         try:
             self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
@@ -151,43 +228,53 @@ class NaviBot():
         cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
         #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
 
-        #壁沿い走行時の中継地点リスト
-        wall_run_waypoints = [
-            [-0.96,0.27,3.1415/4],
-            [-0.81,0.40,3.1415/4],
-            [-0.36,0.83,0],
-            [0.44,0.90,-3.1415/4],
-            [0.85,0.47,-3.1415/4*2],
-            [0.94,-0.33,-3.1415/4*3],
-            [0.45,-0.87,-3.1415],
-            [-0.46,-0.91,3.1415/4*3],
-            [-0.86,-0.47,3.1415/4*2]
-        ]
-
         ###############################
+        #debug code
+        #r=rospy.Rate(5)
         #while not rospy.is_shutdown():
         #    r.sleep()
         ###################################
-        #最近地点のインデックスを計算
-        nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,wall_run_waypoints)
-
-        #最近地点からナビゲーション開始
-        next_waypoint_idx=nearest_waypoint_idx
-        self.is_enemy_detected=False
-        navirun_mode="WALL"
-        while not self.is_enemy_detected:
-            if navirun_mode=="WALL":
+        navirun_mode="MARKER"
+        if navirun_mode=="WALL":#WALL
+            #現在位置計算
+            cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+            #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+            #最近地点のインデックスを計算
+            nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,wall_run_waypoints)
+            #最近地点からナビゲーション開始
+            next_waypoint_idx=nearest_waypoint_idx
+            self.is_enemy_detected=False
+            while not self.is_enemy_detected:
                 waypoint=wall_run_waypoints[next_waypoint_idx]
                 rospy.loginfo(str(next_waypoint_idx))
-                if self.go_waypoint(waypoint) == "SUCCESS":
+                if self.go_waypoint(waypoint,is_passing=True) == "SUCCESS":
                     if next_waypoint_idx+1 >= len(wall_run_waypoints):
                         next_waypoint_idx=0
                     else:
-                        next_waypoint_idx+=1
-                
-            #else:
-                #waypoint=
+                        next_waypoint_idx+=1    
+        else:#MARKER
+            r=rospy.Rate(5)
+            while not self.is_enemy_detected:
+                r.sleep()
+                obtain_marker_list = check_possession_marker(self.war_state)
+                print(obtain_marker_list) 
 
+                #まだ得ていない地点リストを作成
+                not_obtain_marker_waypoints=[elem["pos"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+                not_obtain_marker_names=[elem["name"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+                print(not_obtain_marker_waypoints)
+                print(not_obtain_marker_names)
+                if not_obtain_marker_waypoints:#まだ得ていないマーカがある場合
+                    #現在位置計算
+                    cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+                    #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+                    #最近地点のインデックスを計算
+                    nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,not_obtain_marker_waypoints)
+                    waypoint=not_obtain_marker_waypoints[nearest_waypoint_idx]
+                    print("target_name",not_obtain_marker_names[nearest_waypoint_idx],"target_pos",waypoint)
+                    #最近地点に移動
+                    self.go_waypoint(waypoint,is_passing=False)
+                    self.swing_behavior()
 
         return self.array.data[1], self.array.data[2]
 
