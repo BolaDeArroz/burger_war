@@ -130,11 +130,18 @@ class NaviBot():
     def swing_behavior(self):
         print("swing_behavior")
         #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/10,1.0)
+        self.pub_vel(0,0,-3.1415/7,0.7)
         #反時計方向に180度回転
-        self.pub_vel(0,0,3.1415/10,2.0)
+        self.pub_vel(0,0,3.1415/7,1.4)
         #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/10,1.0)
+        self.pub_vel(0,0,-3.1415/7,0.7)
+
+    def swing_behavior_right(self):
+        print("swing_behavior")
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/3.5,1.6)
+        #反時計方向に90度回転
+        self.pub_vel(0,0,3.1415/3.5,1.4)
 
     def calc_nearest_waypoint_idx(self,position,waypoints):
         nearest_waypoint_idx=0
@@ -162,6 +169,7 @@ class NaviBot():
             
             # is_passingが有効の時、ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
             if is_passing and (math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25) :
+                self.client.cancel_goal()
                 ret="SUCCESS"
                 break
             
@@ -182,21 +190,45 @@ class NaviBot():
         self.client.cancel_goal()
         print("go_waypoint_result=",ret)
         return ret
-
-    def strategy(self,navirun_mode="WALL"):
+    
+    def wall_run(self):
         #壁沿い走行時の地点リスト
         wall_run_waypoints = [
-            [-0.96,0.27,3.1415/4],
-            [-0.81,0.40,3.1415/4],
-            [-0.36,0.83,0],
-            [0.44,0.90,-3.1415/4],
-            [0.85,0.47,-3.1415/4*2],
-            [0.94,-0.33,-3.1415/4*3],
-            [0.45,-0.87,-3.1415],
-            [-0.46,-0.91,3.1415/4*3],
-            [-0.86,-0.47,3.1415/4*2]
+            {"pos":[-0.86, 0.0,3.1415/2],"is_swing":True},
+            {"pos":[-0.81, 0.40,3.1415/4],"is_swing":False},
+            {"pos":[-0.36, 0.83,       0],"is_swing":True},
+            {"pos":[-0.00, 0.83,       0],"is_swing":True},
+            {"pos":[ 0.44, 0.90,-3.1415/4],"is_swing":False},
+            {"pos":[ 0.85, 0.47,-3.1415/4*2],"is_swing":True},
+            {"pos":[ 0.85, 0.00,-3.1415/4*2],"is_swing":True},
+            {"pos":[ 0.94,-0.33,-3.1415/4*3],"is_swing":False},
+            {"pos":[ 0.45,-0.87,-3.1415],"is_swing":True},
+            {"pos":[ 0.00,-0.87,-3.1415],"is_swing":True},
+            {"pos":[-0.46,-0.91,3.1415/4*3],"is_swing":False},
+            {"pos":[-0.86,-0.47,3.1415/4*2],"is_swing":False},
         ]
-  
+        #現在位置計算
+        cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+        #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+        #最近地点のインデックスを計算
+        wall_run_waypoints_pos=[elem["pos"] for elem in wall_run_waypoints]
+        nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,wall_run_waypoints_pos)
+        #最近地点からナビゲーション開始
+        next_waypoint_idx=nearest_waypoint_idx
+        self.is_enemy_detected=False
+        while not self.is_enemy_detected:
+            waypoint=wall_run_waypoints[next_waypoint_idx]
+            rospy.loginfo(str(next_waypoint_idx))
+            if self.go_waypoint(waypoint["pos"],is_passing=False) == "SUCCESS":
+                if waypoint["is_swing"]:
+                    self.swing_behavior_right()#首を降って索敵
+                if next_waypoint_idx+1 >= len(wall_run_waypoints):
+                    next_waypoint_idx=0
+                else:
+                    next_waypoint_idx+=1
+
+
+    def marker_run(self):
         #フィールドマーカ読み取り時の地点リスト(side=r)
         marker_run_waypoints_r =[
             {"name":u"Tomato_N","pos":[0.77,0.53,3.1415]}, #Tomato_N
@@ -220,6 +252,33 @@ class NaviBot():
         if self.name=="red_bot":marker_run_waypoints=marker_run_waypoints_r
         else:marker_run_waypoints=marker_run_waypoints_b
 
+        r=rospy.Rate(5)
+        while not self.is_enemy_detected:
+            r.sleep()
+            obtain_marker_list = self.check_possession_marker(self.war_state)
+            print(obtain_marker_list) 
+
+            #まだ得ていないマーカリストを作成
+            not_obtain_marker_waypoints=[elem["pos"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+            not_obtain_marker_names=[elem["name"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+            print(not_obtain_marker_waypoints)
+            print(not_obtain_marker_names)
+            if not_obtain_marker_waypoints:#まだ得ていないマーカがある場合
+                #現在位置計算
+                cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+                #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+                #最近地点のインデックスを計算
+                nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,not_obtain_marker_waypoints)
+                waypoint=not_obtain_marker_waypoints[nearest_waypoint_idx]
+                print("target_name",not_obtain_marker_names[nearest_waypoint_idx],"target_pos",waypoint)
+                #最近地点に移動
+                if self.go_waypoint(waypoint,is_passing=False) == "SUCCESS":
+                    self.swing_behavior()
+            else:#全てのマーカを得た場合
+                self.pub_vel(0,0,-3.1415/10,1.0)#回転して索敵    
+
+    def strategy(self,navirun_mode="WALL"):
+
         try:
             self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         except (tf.LookupException, tf.ConnectivityException):
@@ -238,49 +297,9 @@ class NaviBot():
         ###################################
         #navirun_mode="MARKER"
         if navirun_mode=="WALL":#WALL
-            #現在位置計算
-            cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-            #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
-            #最近地点のインデックスを計算
-            nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,wall_run_waypoints)
-            #最近地点からナビゲーション開始
-            next_waypoint_idx=nearest_waypoint_idx
-            self.is_enemy_detected=False
-            while not self.is_enemy_detected:
-                waypoint=wall_run_waypoints[next_waypoint_idx]
-                rospy.loginfo(str(next_waypoint_idx))
-                if self.go_waypoint(waypoint,is_passing=False) == "SUCCESS":
-                    if next_waypoint_idx+1 >= len(wall_run_waypoints):
-                        next_waypoint_idx=0
-                    else:
-                        next_waypoint_idx+=1
-                    self.swing_behavior()#回転して敵を探す
-
+            self.wall_run()
         else:#MARKER
-            r=rospy.Rate(5)
-            while not self.is_enemy_detected:
-                r.sleep()
-                obtain_marker_list = self.check_possession_marker(self.war_state)
-                print(obtain_marker_list) 
-
-                #まだ得ていないマーカリストを作成
-                not_obtain_marker_waypoints=[elem["pos"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
-                not_obtain_marker_names=[elem["name"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
-                print(not_obtain_marker_waypoints)
-                print(not_obtain_marker_names)
-                if not_obtain_marker_waypoints:#まだ得ていないマーカがある場合
-                    #現在位置計算
-                    cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-                    #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
-                    #最近地点のインデックスを計算
-                    nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,not_obtain_marker_waypoints)
-                    waypoint=not_obtain_marker_waypoints[nearest_waypoint_idx]
-                    print("target_name",not_obtain_marker_names[nearest_waypoint_idx],"target_pos",waypoint)
-                    #最近地点に移動
-                    self.go_waypoint(waypoint,is_passing=False)
-                    self.swing_behavior()
-                else:#全てのマーカを得た場合
-                    self.pub_vel(0,0,-3.1415/10,1.0)#回転して索敵
+            self.marker_run()
 
         return self.array.data[1], self.array.data[2]
 
