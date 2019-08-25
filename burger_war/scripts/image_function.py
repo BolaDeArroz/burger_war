@@ -5,6 +5,51 @@ import numpy as np
 
 
 
+def clipping(img, img_min, img_max):
+    mask = img > img_max
+    channelNum = img.shape[2]
+    if channelNum > 1:
+        #mask = mask.sum(axis=2)
+        mask = mask[:, :, 0] + mask[:, :, 1] + mask[:, :, 2]
+        mask = np.tile(mask[:, :, None], [1, 1, channelNum])
+    res = 255 * (img - img_min)/(img_max - img_min) # normalization
+
+    res[mask > 0] = 255  # paint over-exposure regions with white
+
+    return res
+
+
+def Normalization(img):
+    # averaging color
+    b, g, r = cv2.split(img)
+    ave = [b.mean(), g.mean(), r.mean()]
+
+    res_s = img.astype(float)
+    res = np.ones((250,250,3),dtype=float)
+    for c in range(3):
+        res_s[:, :, c] = res_s[:, :, c] / ave[c]
+
+    # display the tmp average of the two modified gray images
+    ## all average of two input images is 1.0 (but image range is not [0,255] but [0,unknown])
+    tmp_res1, tmp_res2, tmp_res3 = cv2.split(res)
+    tmp_ave_res = [tmp_res1.mean(), tmp_res2.mean(),tmp_res3.mean() ]    ## image normalization
+    ### image range [0, unknown] -> [0,255]
+    th = np.nanpercentile(res_s, 99.5, interpolation='linear')
+    res_s = clipping(res_s, res_s.min(), th)
+    res_s = res_s.astype(np.uint8)
+
+    res_b, res_g, res_r = cv2.split(res_s)
+
+    ave_res = [res_b.mean(), res_g.mean(), res_r.mean()]
+
+    cv2.imshow('orig_c', res_s)
+
+    cv2.imshow('orig', img)
+    cv2.imshow('average color', res_s.astype(np.uint8))
+
+    return res_s
+
+
 # create sample mask image window function-------------------------------------------------
 def createMaskImage(hsv, hue, sat, val):
     imh, imw, channels = hsv.shape  # get image size and the number of channels
@@ -30,39 +75,56 @@ def detect_enemy_robot(frame):
 
     # convert to HSV (Hue, Saturation, Value(Brightness))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    #cv2.imshow("Hue", hsv[:, :, 0])
+    cv2.imshow("Hue", hsv[:, :, 0])
     """
     use the bgr method at gazebo because hsv not show
     """
     # find red ball
     # bgr
-    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    # hsv
+    rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    rnb_red = rnb_red1 + rnb_red2
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
-    #cv2.imshow("rnb_red", rnb_red)
+    cv2.imshow("rnb_red", rnb_red)
     im, contours, hierarchy = cv2.findContours(rnb_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "red", img, "red")
     
     result_dict['red_ball'] = contours
-    #rnb_green = createMaskImage(hsv, [110 ,130], [80, 100], [40, 60])
+    
     # bgr
-    rnb_green = createMaskImage(img, [0 , 10], [140, 160], [0, 10])
+    # rnb_green = createMaskImage(img, [0 , 10], [140, 160], [0, 10])
+    # hsv
+    rnb_green = createMaskImage(hsv, [45 ,65], [50, 255], [50, 255])
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9))) # using 9x9 ellipse kernel
     rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4,4))) # using 4x4 ellipse kernel
-    #cv2.imshow("rnb_green", rnb_green)
+    cv2.imshow("rnb_green", rnb_green)
     im, contours, hierarchy = cv2.findContours(rnb_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "green", img, "green")
     result_dict['green_side'] = contours
 
     # burger
-    rnb_burger = createMaskImage(img, [25 , 27], [25, 27], [25, 27])
-    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2,2)))
-    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(39,39)))
-    #cv2.imshow("rnb_burger", rnb_burger)
+    # rgb
+    img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
+    #cv2.imshow("img_gblur", img_gblur)
+    # rnb_burger = createMaskImage(img_gblur, [20 , 100], [20, 100], [20, 100])
+    # hsv
+    rnb_burger = createMaskImage(img_gblur, [90 , 110], [30, 60], [70, 105])  
+    #cv2.imshow("rnb_burger0", rnb_burger)
+    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4, 4)))
+    #cv2.imshow("rnb_burger1", rnb_burger)
+    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5, 5)))
+    #cv2.imshow("rnb_burger2", rnb_burger)
+    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(39, 39)))
+    #cv2.imshow("rnb_burger3", rnb_burger)
+    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(89,89)))
+    cv2.imshow("rnb_burger", rnb_burger)
     im, contours, hierarchy = cv2.findContours(rnb_burger, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "almond", img, "almond")
@@ -194,7 +256,7 @@ def get_tracking_info(original_image):
     enemy_area = 0
     # get contours from enemy
     enemy_robot_contours = detect_enemy_robot(original_image)
-    #cv2.imshow("Image", original_image)
+    cv2.imshow("Image", original_image)
     cv2.waitKey(1)
 
     red_ball_contours = enemy_robot_contours['red_ball']
