@@ -1,7 +1,0 @@
-image: field_map.pgm
-resolution: 0.025000
-origin: [-12.00000, -12.00000, 0.0000]
-negate: 0
-occupied_thresh: 0.65
-free_thresh: 0.196
-
