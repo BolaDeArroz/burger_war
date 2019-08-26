@@ -30,7 +30,7 @@ def detect_enemy_robot(frame):
 
     # convert to HSV (Hue, Saturation, Value(Brightness))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    cv2.imshow("Hue", hsv[:, :, 0])
+    #cv2.imshow("Hue", hsv[:, :, 0])
     """
     use the bgr method at gazebo because hsv not show
     """
@@ -40,7 +40,7 @@ def detect_enemy_robot(frame):
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
-    cv2.imshow("rnb_red", rnb_red)
+    #cv2.imshow("rnb_red", rnb_red)
     im, contours, hierarchy = cv2.findContours(rnb_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "red", img, "red")
@@ -52,7 +52,7 @@ def detect_enemy_robot(frame):
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9))) # using 9x9 ellipse kernel
     rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4,4))) # using 4x4 ellipse kernel
-    cv2.imshow("rnb_green", rnb_green)
+    #cv2.imshow("rnb_green", rnb_green)
     im, contours, hierarchy = cv2.findContours(rnb_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "green", img, "green")
@@ -62,7 +62,7 @@ def detect_enemy_robot(frame):
     rnb_burger = createMaskImage(img, [25 , 27], [25, 27], [25, 27])
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(2,2)))
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(39,39)))
-    cv2.imshow("rnb_burger", rnb_burger)
+    #cv2.imshow("rnb_burger", rnb_burger)
     im, contours, hierarchy = cv2.findContours(rnb_burger, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "almond", img, "almond")
@@ -107,7 +107,7 @@ def Draw_txt(im, contours, hierarchy,img):
             cv2.putText(img, "Another Object", (posx, posy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         else: # -- is not "Skal"
             cv2.rectangle(img, (posx, posy), (posx + width, posy + height), (0, 255, 0), 2)
-            cv2.imshow("Image", img)
+            #cv2.imshow("Image", img)
 
 
 
@@ -194,7 +194,7 @@ def get_tracking_info(original_image):
     enemy_area = 0
     # get contours from enemy
     enemy_robot_contours = detect_enemy_robot(original_image)
-    cv2.imshow("Image", original_image)
+    #cv2.imshow("Image", original_image)
     cv2.waitKey(1)
 
     red_ball_contours = enemy_robot_contours['red_ball']

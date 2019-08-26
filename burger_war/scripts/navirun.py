@@ -3,14 +3,16 @@
 import rospy
 import random
 import math
+import json
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Path
+from std_msgs.msg import Bool,Float32MultiArray,String
 import tf
 
 
 import actionlib
-from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 import actionlib_msgs
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 # Ref: https://hotblackrobotics.github.io/en/blog/2018/01/29/action-client-py/
 
@@ -20,26 +22,64 @@ import actionlib_msgs
 #import cv2
 
 
+
 class NaviBot():
     def __init__(self):
         # bot name 
         robot_name=rospy.get_param('~robot_name')
         self.name = robot_name
+        robot_side=""#rospy.get_param('~side')#TODO launchファイル更新したら書き換え
+        if robot_side:
+            self.side=robot_side
+        else:
+            if self.name=='red_bot':self.side='r'
+            else:self.side = 'b'
         
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+    
         
-        self.current_global_plan = Path()
+        self.is_enemy_detected=False
+        self.array=Float32MultiArray()
+        rospy.Subscriber("/"+self.name+"/array", Float32MultiArray, self.enemy_detect_callback)
 
-        rospy.Subscriber("/"+self.name+"/move_base/DWAPlannerROS/global_plan", Path, self.callback)
-        #rospy.Subscriber("/"+self.name+"/move_base/NavfnROS/plan", Path, self.callback)
+        self.tf_listener=tf.TransformListener()
+
+        #warstate subscriber
+        self.war_state = None
+        self.war_state_sub = rospy.Subscriber("/"+self.name+"/war_state", String, self.warstate_callback)
 
 
+    def check_possession_marker(self,war_state):
+        obtain_targets_list = []
+        targets_list = []
+        if war_state is None:
+            return obtain_targets_list
+        #print(dir(war_state.data))
+        #print(war_state.data)
+        json_war_state = json.loads(war_state.data)
+        for key in json_war_state:
+            if key == 'scores':
+                # TODO
+                pass
+            elif key == 'targets':
+                targets_list = json_war_state[key]
+                break
+        for target in targets_list:
+            for key in target:
+                if key == 'player' and target[key] == self.side:
+                    obtain_targets_list.append(target['name'])
+        return obtain_targets_list
 
-    def callback(self,data):
-        self.current_global_plan=data
-        rospy.loginfo(str(data.poses[0].pose.position.x))
+    def enemy_detect_callback(self,array):
+        #print("EnemyDetect", array.data[0], self.is_enemy_detected)	   
+        #if array.data[2] >= 11 and int(array.data[0]!=0):
+        #    self.is_enemy_detected = True
+        self.array=array
+
+    def warstate_callback(self, data):
+        self.war_state = data
 
     def setGoal(self,x,y,yaw):
         self.client.wait_for_server()
@@ -58,189 +98,214 @@ class NaviBot():
         goal.target_pose.pose.orientation.w = q[3]
 
         self.client.send_goal(goal)
-        self.recoverMove(goal)
 
-        wait = self.client.wait_for_result()
-        if not wait:
-            rospy.logerr("Action server not available!")
-            rospy.signal_shutdown("Action server not available!")
-        else:
-            return self.client.get_result()  
+        #wait = self.client.wait_for_result()
+        #if not wait:
+        #    rospy.logerr("Action server not available!")
+        #    rospy.signal_shutdown("Action server not available!")
+        #else:
+        #    return self.client.get_result()  
 
-          
-
-    def recoverMove(self,goal):
-        
-        rospy.loginfo("recover")
-        #現在地点取得用リスナー
-        listener = tf.TransformListener()
-        listener.waitForTransform(self.name +"/map",self.name +"/base_link", rospy.Time(), rospy.Duration(4.0))
-        # map座標系の現在位置をｔｆから取得し、前地点に設定
-        pre_position, pre_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-        pre_time=rospy.Time.now()
-        rospy.sleep(0.5)
-        
-        rospy.loginfo("fuga")
-        #loop
-        while self.client.get_state()==actionlib.SimpleGoalState.ACTIVE:
-            rospy.loginfo(self.client.get_state())
-            #map座標系の現在位置をｔｆから取得し、現在地点に設定
-            cur_position, cur_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-            #移動距離計算
-            moved_dist = math.sqrt((cur_position[0]-pre_position[0])**2 + (cur_position[1]-pre_position[1])**2 )
-            rospy.loginfo("moved_dist="+str(moved_dist))
-
-            #角度差分計算
-            rotated_rad = math.fabs(cur_orientation[2]-pre_orientation[2])
-            rospy.loginfo("rotated_rad="+str(rotated_rad))
-            #移動距離が一定値(m)を下回る場合
-            if moved_dist <= 0.5:
-                #経過時間計算
-                cur_time=rospy.Time.now()
-                rospy.loginfo("cur_time"+str(cur_time.secs)+"."+str(cur_time.nsecs))
-                rospy.loginfo("pre_time"+str(pre_time.secs)+"."+str(pre_time.nsecs))
-                elapsed_time_sec=float((cur_time.secs+cur_time.nsecs/(1000*1000*1000))-(pre_time.secs+pre_time.nsecs/(1000*1000*1000)))
-                rospy.loginfo("elapsed_time_sec="+str(elapsed_time_sec))
-                rospy.loginfo("1/(moved_dist+0.01)*elapsed_time_sec="+str(1/(moved_dist+0.01)*elapsed_time_sec))
-                #1/移動距離*経過時間がしきい値を超える場合(要計算)
-                if ((1/(moved_dist+0.01))*elapsed_time_sec)>=40 and rotated_rad <=0.5:
-                    #現在のplan保存
-                    current_plan=self.current_global_plan
-
-                    rospy.loginfo("robot is stucked") 
-                    #send_goal actionキャンセル
-                    self.client.cancel_goal()
-                    rospy.loginfo("current goal is canceled")
-
-                    
-                    #一定距離バック
-                    rospy.loginfo("back")
-                    back_cmd=Twist()
-                    back_cmd.linear.x=-0.15
-                    back_cmd.linear.y=0
-                    back_cmd.angular.z=0
-                    end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+1.0)
-                    while not rospy.is_shutdown():
-                        rospy.loginfo("linear.x="+str(back_cmd.linear.x)+"linear.y="+str(back_cmd.linear.y))
-                        self.vel_pub.publish(back_cmd)
-                        if end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)):
-                            break
-                        else:
-                            rospy.sleep(0.1)
-                    #停止
-                    rospy.loginfo("stop")
-                    stop_cmd=Twist()
-                    stop_cmd.linear.x=0
-                    stop_cmd.linear.y=0
-                    stop_cmd.angular.z=0
-                    self.vel_pub.publish(stop_cmd)
-                    rospy.sleep(0.5)
-
-                    #global_planから中間地点の座標を得る
-                    #rospy.loginfo(str(self.current_global_plan.poses[0].pose.position.x))
-                    #middle_pose=current_plan.poses[int(math.floor(len(current_plan.poses)/2))].pose
-                    middle_pose=current_plan.poses[0].pose
-
-                    #中間地点方向に回転===================
-                    #map座標系の現在位置をｔｆから取得し、現在地点に設定
-                    listener.waitForTransform(self.name +"/map",self.name +"/base_link", rospy.Time(), rospy.Duration(4.0))
-                    a_position, _ = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-                    rospy.loginfo("a_position.x="+str(a_position[0])+"a_position.y="+str(a_position[1]))
-                    rospy.loginfo("middle_pose.x="+str(middle_pose.position.x)+"middle_pose.y="+str(middle_pose.position.y))
-                    rospy.loginfo("mod_middle_pose.x="+str(-middle_pose.position.y)+"mod_middle_pose.y="+str(middle_pose.position.x))
-
-                    x1=a_position[0]
-                    y1=a_position[1]
-                    x2=-middle_pose.position.y
-                    y2=middle_pose.position.x
-                    #中間地点向きの角度算出
-                    rad=math.atan2(y2-y1,x2-x1)
-                    rospy.loginfo(str(rad))
-                    #角度をマップ座標系に変換
-                    map_rad=-rad
-                    #現在位置からnavigation(回転)
-                    self.setGoal(x1,y1,map_rad)
-
-                    #中間地点をゴールに設定
-                    rospy.loginfo("set_middle_goal")
-                    middle_goal = MoveBaseGoal()
-                    middle_goal.target_pose.header.frame_id = self.name + "/odom"
-                    middle_goal.target_pose.header.stamp = rospy.Time.now()
-                    middle_goal.target_pose.pose=middle_pose
-                    rospy.loginfo("middle_goal_ori_x="+str(middle_goal.target_pose.pose.orientation.x))
-                    rospy.loginfo("middle_goal_ori_y="+str(middle_goal.target_pose.pose.orientation.y))
-                    rospy.loginfo("middle_goal_ori_z="+str(middle_goal.target_pose.pose.orientation.z))
-                    rospy.loginfo("middle_goal_ori_w="+str(middle_goal.target_pose.pose.orientation.w))                    
-
-                    #self.client.send_goal(middle_goal)
-                    #self.recoverMove(middle_goal)
-
-                    #経過時間リセット
-                    pre_time=rospy.Time.now()
-                    #元のゴールに再設定
-                    self.client.send_goal(goal)
-                    self.recoverMove(goal)
-                    #map座標系の現在位置をｔｆから取得し、前地点座標更新
-                    pre_position, pre_orientation = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-            #移動距離が一定値を下回らない場合
+    #
+    def pub_vel(self,lin_x=0,lin_y=0,ang_z=0,time_sec=0.5):
+        cmd_vel=Twist()
+        cmd_vel.linear.x=lin_x
+        cmd_vel.linear.y=lin_y
+        cmd_vel.angular.z=ang_z
+        end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+time_sec)
+        while not rospy.is_shutdown():
+            rospy.loginfo("cmd_vel.linear.x="+str(cmd_vel.linear.x)+",cmd_vel.linear.y="+str(cmd_vel.linear.y)+",cmd_vel.angular.z="+str(cmd_vel.angular.z))
+            self.vel_pub.publish(cmd_vel)
+            if (self.is_enemy_detected) or (end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000))):
+                break
             else:
-                #経過時間リセット
-                pre_time=rospy.Time.now()
-                #前地点座標更新
-                pre_position=cur_position
-                pre_orientaion=cur_orientation
+                rospy.sleep(0.1)
+        self.vel_pub.publish(Twist())#stop
 
-            #sleep
-            rospy.sleep(0.5)
+    def recovery_abort_behavior(self):   
+        print("recovery_abort_behavior")
+        #一定距離バック
+        self.pub_vel(-0.15,0,0,0.8)
 
-    def strategy(self):
+    def swing_behavior(self):
+        print("swing_behavior")
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/7,0.7)
+        #反時計方向に180度回転
+        self.pub_vel(0,0,3.1415/7,1.4)
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/7,0.7)
+
+    def swing_behavior_right(self):
+        print("swing_behavior")
+        #時計方向に90度回転
+        self.pub_vel(0,0,-3.1415/3.5,1.6)
+        #反時計方向に90度回転
+        self.pub_vel(0,0,3.1415/3.5,1.4)
+
+    def calc_nearest_waypoint_idx(self,position,waypoints):
+        nearest_waypoint_idx=0
+        nearest_distance = 10
+        for (idx_waypoint,waypoint) in enumerate(waypoints):
+            tmp_distance=math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 )
+            if tmp_distance <nearest_distance:
+                nearest_distance=tmp_distance
+                nearest_waypoint_idx=idx_waypoint
+        return nearest_waypoint_idx
+
+    def go_waypoint(self,waypoint,is_passing=False):
         r = rospy.Rate(5) # change speed 5fps
-        listener = tf.TransformListener()
+        self.setGoal(waypoint[0],waypoint[1],waypoint[2])
+        rospy.loginfo("state="+str(self.client.get_state()))
+        print("is_enemy_detected",self.is_enemy_detected)
+        ret="FAILED"
+        while self.client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,actionlib_msgs.msg.GoalStatus.PENDING] and not self.is_enemy_detected:
+            r.sleep()
+            now = rospy.Time.now()
+            self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link", now, rospy.Duration(4.0))
+
+            # map座標系の現在位置をｔｆから取得する
+            position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+            
+            # is_passingが有効の時、ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
+            if is_passing and (math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25) :
+                self.client.cancel_goal()
+                ret="SUCCESS"
+                break
+            
+        if self.client.get_state()==actionlib_msgs.msg.GoalStatus.SUCCEEDED:
+            ret="SUCCESS"
+
+
+        if self.client.get_state()==actionlib_msgs.msg.GoalStatus.ABORTED:
+            self.recovery_abort_behavior()
+            self.client.cancel_goal()
+            ret="FAILED"
+            
+        if self.is_enemy_detected:
+            rospy.loginfo("enemy_detected!!")
+            self.client.cancel_goal()  
+            ret="FAILED"
+        
+        self.client.cancel_goal()
+        print("go_waypoint_result=",ret)
+        return ret
+    
+    def wall_run(self):
+        #壁沿い走行時の地点リスト
+        wall_run_waypoints = [
+            {"pos":[-0.86, 0.0,3.1415/2],"is_swing":True},
+            {"pos":[-0.81, 0.40,3.1415/4],"is_swing":False},
+            {"pos":[-0.36, 0.83,       0],"is_swing":True},
+            {"pos":[-0.00, 0.83,       0],"is_swing":True},
+            {"pos":[ 0.44, 0.90,-3.1415/4],"is_swing":False},
+            {"pos":[ 0.85, 0.47,-3.1415/4*2],"is_swing":True},
+            {"pos":[ 0.85, 0.00,-3.1415/4*2],"is_swing":True},
+            {"pos":[ 0.94,-0.33,-3.1415/4*3],"is_swing":False},
+            {"pos":[ 0.45,-0.87,-3.1415],"is_swing":True},
+            {"pos":[ 0.00,-0.87,-3.1415],"is_swing":True},
+            {"pos":[-0.46,-0.91,3.1415/4*3],"is_swing":False},
+            {"pos":[-0.86,-0.47,3.1415/4*2],"is_swing":False},
+        ]
+        #現在位置計算
+        cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+        #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+        #最近地点のインデックスを計算
+        wall_run_waypoints_pos=[elem["pos"] for elem in wall_run_waypoints]
+        nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,wall_run_waypoints_pos)
+        #最近地点からナビゲーション開始
+        next_waypoint_idx=nearest_waypoint_idx
+        self.is_enemy_detected=False
+        while not self.is_enemy_detected:
+            waypoint=wall_run_waypoints[next_waypoint_idx]
+            rospy.loginfo(str(next_waypoint_idx))
+            if self.go_waypoint(waypoint["pos"],is_passing=False) == "SUCCESS":
+                if waypoint["is_swing"]:
+                    self.swing_behavior_right()#首を降って索敵
+                if next_waypoint_idx+1 >= len(wall_run_waypoints):
+                    next_waypoint_idx=0
+                else:
+                    next_waypoint_idx+=1
+
+
+    def marker_run(self):
+        #フィールドマーカ読み取り時の地点リスト(side=r)
+        marker_run_waypoints_r =[
+            {"name":u"Tomato_N","pos":[0.77,0.53,3.1415]}, #Tomato_N
+            {"name":u"Tomato_S","pos":[0.0,0.53,0.0]},     #Tomato_S
+            {"name":u"Omelette_N","pos":[0.77,-0.53,3.1415]},#Omelette_N
+            {"name":u"Omelette_S","pos":[0.0,-0.53,3.1415/2]},#Omelette_S
+            {"name":u"Pudding_N","pos":[0.0,0.53,3.1415]},  #Pudding_N
+            {"name":u"Pudding_S","pos":[-0.77,0.53,0.0]},  #Pudding_S
+            {"name":u"OctopusWiener_N","pos":[0.0,-0.53,3.1415]},#OctopusWiener_N
+            {"name":u"OctopusWiener_S","pos":[-0.77,-0.53,0.0]},#OctopusWiener_S
+            {"name":u"FriedShrimp_N","pos":[0.53,0.0,3.1415]},#FriedShrimp_N
+            {"name":u"FriedShrimp_E","pos":[0.0,-0.53,3.1415/2]},#FriedShrimp_E
+            {"name":u"FriedShrimp_W","pos":[0.0,0.53,-3.1415/2]},#FriedShrimp_W
+            {"name":u"FriedShrimp_S","pos":[-0.53,0.0,0.0]},#FriedShrimp_S
+        ]
+        #フィールドマーカ読み取り時の地点リスト(side=b)
+        marker_run_waypoints_b=[{"name":elem["name"],"pos":[-elem["pos"][0],-elem["pos"][1],elem["pos"][2]+3.1414]} for elem in marker_run_waypoints_r]
+        print(marker_run_waypoints_b)
+        
+        #nameでリスト変更
+        if self.name=="red_bot":marker_run_waypoints=marker_run_waypoints_r
+        else:marker_run_waypoints=marker_run_waypoints_b
+
+        r=rospy.Rate(5)
+        while not self.is_enemy_detected:
+            r.sleep()
+            obtain_marker_list = self.check_possession_marker(self.war_state)
+            print(obtain_marker_list) 
+
+            #まだ得ていないマーカリストを作成
+            not_obtain_marker_waypoints=[elem["pos"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+            not_obtain_marker_names=[elem["name"] for elem in marker_run_waypoints if elem["name"] not in obtain_marker_list]
+            print(not_obtain_marker_waypoints)
+            print(not_obtain_marker_names)
+            if not_obtain_marker_waypoints:#まだ得ていないマーカがある場合
+                #現在位置計算
+                cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
+                #cur_eular=tf.transformations.euler_from_quaternion(cur_orientation)
+                #最近地点のインデックスを計算
+                nearest_waypoint_idx=self.calc_nearest_waypoint_idx(cur_position,not_obtain_marker_waypoints)
+                waypoint=not_obtain_marker_waypoints[nearest_waypoint_idx]
+                print("target_name",not_obtain_marker_names[nearest_waypoint_idx],"target_pos",waypoint)
+                #最近地点に移動
+                if self.go_waypoint(waypoint,is_passing=False) == "SUCCESS":
+                    self.swing_behavior()
+            else:#全てのマーカを得た場合
+                self.pub_vel(0,0,-3.1415/10,1.0)#回転して索敵    
+
+    def strategy(self,navirun_mode="WALL"):
+
         try:
-            listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
+            self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         except (tf.LookupException, tf.ConnectivityException):
             rospy.logerr("tf_err")
-        listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
-        #中継地点リスト
-        waypoints = [
-            [-1.1, 0.3, 3.1415/4],
-            [-0.7, 0.7, 3.1415/4],
-            [-0.4, 1.0, 0],
-            #[0.0, 1.4,-3.1415/4],#左角(初期位置から)
-            [ 0.4, 1.0,-3.1415/4],
-            [ 0.7, 0.7,-3.1415/4],
-            [ 1.1, 0.3,-3.1415/4*2],
-            #[ 1.25, 0.0,-3.1415/4*3],#対角(初期位置から)
-            [ 1.1 ,-0.3,-3.1415/4*3],
-            [ 0.7 ,-0.7,-3.1415/4*3],
-            [ 0.4 ,-1.0,3.1415],
-            #[ 0.0 ,-1.4,3.1415/4*3],#右角(初期位置から)
-            [-0.4 ,-1.0,3.1415/4*3],
-            [-0.7 ,-0.7,3.1415/4*3],
-            [-1.1 ,-0.3,3.1415/4*2]
-        ]
-        #self.setGoal(-1.15,0.0,3.1415/4)
+        except Exception as e:
+            # I think this error that tf2_ros.TransformException
+            print('SSSSSSSSSSSSSSSSSSSs', e)
+        self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
+        
 
-        for waypoint in waypoints:
-            self.setGoal(waypoint[0],waypoint[1],waypoint[2])
-            if waypoint[0] == -0.4:
-                break
-            #while not rospy.is_shutdown():
-            #     now = rospy.Time.now()
-            #     listener.waitForTransform(self.name +"/map",self.name +"/base_link", now, rospy.Duration(4.0))
+        ###############################
+        #debug code
+        #r=rospy.Rate(5)
+        #while not rospy.is_shutdown():
+        #    r.sleep()
+        ###################################
+        #navirun_mode="MARKER"
+        if navirun_mode=="WALL":#WALL
+            self.wall_run()
+        else:#MARKER
+            self.marker_run()
 
-            #     # map座標系の現在位置をｔｆから取得する
-            #     position, quaternion = listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
-
-            #     # ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
-            #     if(math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25):
-            #         print "next!!"
-            #         break
-
-            #     else:
-            #         rospy.sleep(0.5)
+        return self.array.data[1], self.array.data[2]
 
 if __name__ == '__main__':
     rospy.init_node('navirun')
     bot = NaviBot()
     bot.strategy()
+
+
