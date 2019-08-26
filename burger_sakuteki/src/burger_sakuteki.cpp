@@ -10,18 +10,17 @@
 #include <std_msgs/Float32MultiArray.h>
 
 ros::Subscriber sub_;
-image_transport::Publisher  pub_image;
+image_transport::Publisher  pub_image_;
 cv_bridge::CvImage bridge_;
-ros::Publisher pub;
+ros::Publisher pub_;
 std_msgs::Float32MultiArray array;
 
-#define nTARGETCOLOR    2
+#define nTARGETCOLOR    1
 CvScalar targetColor[nTARGETCOLOR] = {
     CV_RGB(255,0,0),    // 赤玉の色(red)
-    CV_RGB(0,255,0)     // 敵のQRコード枠色(green)
 };
 
-int tolerance = 30;             // 色許容値
+int tolerance = 60;             // 色許容値
 int xmin = 0, ymin = 0;
 int xmax = 0, ymax = 0;
 
@@ -35,27 +34,30 @@ bool sakuteki(cv_bridge::CvImagePtr cv_msg, CvScalar searchColor)
 
     for(int i = 0; i < cv_msg->image.rows; i++)
     {
-        int y = i*cv_msg->image.step; // syuusei yotei
+        int y = i*cv_msg->image.step;
+        int index = 0;
 
         for(int x = 0; x < cv_msg->image.cols; x++)
         {
-            int difRed = abs(get_red(searchColor)-cv_msg->image.data[y+(x*3)+2]);
-            int difGreen = abs(get_green(searchColor)-cv_msg->image.data[y+(x*3)+1]);
-            int difBlue = abs(get_blue(searchColor)-cv_msg->image.data[y+(x*3)+0]);
+            index = y+(x*3);
+            int difRed = abs(get_red(searchColor)-cv_msg->image.data[index+2]);
+            int difGreen = abs(get_green(searchColor)-cv_msg->image.data[index+1]);
+            int difBlue = abs(get_blue(searchColor)-cv_msg->image.data[index+0]);
 
-		//ROS_INFO("difRed=%d, difGreen= %d, difBlue=%d", difRed, difGreen, difBlue);
+            //ROS_INFO("difRed=%d, difGreen= %d, difBlue=%d", difRed, difGreen, difBlue);
 
             //RGB各色が許容値以内の場合（近似色である場合）
-            if(difRed < tolerance && difGreen < tolerance && difBlue < tolerance){
-              //フラグを物体検知有りにする
-              detection = true;
+            if(difRed < tolerance && difGreen < tolerance && difBlue < tolerance)
+            {
+                //フラグを物体検知有りにする
+                detection = true;
 
-              //左端、右端のX座標、上端、下端のY座標を導く
-              //今回の値と今までの値を比較し、最小値、最大値を調べる
-              xmin = std::min(x, xmin);    //左端（X最小値）
-              xmax = std::max(x, xmax);    //右端（X最大値）
-              ymin = std::min(i, ymin);      //上端（Y最小値）
-              ymax = std::max(i, ymax);      //下端（Y最大値）
+                //左端、右端のX座標、上端、下端のY座標を導く
+                //今回の値と今までの値を比較し、最小値、最大値を調べる
+                xmin = std::min(x, xmin);    //左端（X最小値）
+                xmax = std::max(x, xmax);    //右端（X最大値）
+                ymin = std::min(i, ymin);      //上端（Y最小値）
+                ymax = std::max(i, ymax);      //下端（Y最大値）
             }
         }
     }
@@ -67,6 +69,7 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   //ROS_INFO("get image");
   /* ImageトピックをCvImage型に変換 */
+//  cv_bridge::CvImagePtr cv_origin_msg = cv_bridge::toCvCopy(msg, "bgr8");
   cv_bridge::CvImagePtr cv_msg = cv_bridge::toCvCopy(msg, "bgr8");
 
   //////////////////////////////////////////
@@ -87,13 +90,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
     // 赤玉を探す
     detection = sakuteki(cv_msg, targetColor[0]);
-    if(detection == false)
-    {
-        // 赤玉が見つからない場合敵のQRコードの枠色を探す
-        detection = sakuteki(cv_msg, targetColor[1]);
-    }
-
-    array.data.resize(5);
     array.data[0] = detection;
 
     //ROS_INFO("detection=%d", detection);
@@ -103,50 +99,46 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
         int x = (xmin + xmax)/2;
         int y = (ymin + ymax)/2;
         // デバッグ用描画(Black Circle)
-       cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
+//        cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
 
         // 敵と正面に向き合うための幅()
         int move_x = x-(cv_msg->image.cols/2);
 
         // detection, move_x, xmax-xminをmsgパラーメタとして送信
-	array.data[1] = move_x;
-	array.data[2] = xmax-xmin;
+        array.data[1] = move_x;
+        array.data[2] = xmax-xmin;
         array.data[3] = cv_msg->image.cols;
-	array.data[4] = cv_msg->image.rows;
-
-	ROS_INFO("detection=%d, move_x=%d, size=%d", detection, move_x, xmax-xmin);
+        array.data[4] = cv_msg->image.rows;
     }
 
-    pub.publish(array);
+    pub_.publish(array);
 
     // ここまでOpenCVを使用せずに赤玉の位置を特定するコード
     /*********************************************************/
-
   //////////////////////////////////////////
-
-  /* CvImage型をトピックに変換してpublish */
-  pub_image.publish(cv_msg->toImageMsg());
 }
 
 int main(int argc, char * argv[])
 {
-  ros::init(argc, argv, "burger_sakuteki");
-  ros::NodeHandle n("~");
-  std::string param = "";
-  n.getParam("robot_name", param);
-  ROS_INFO("exec bla_camra");
+    ros::init(argc, argv, "burger_sakuteki");
+    ros::NodeHandle n("~");
+    std::string param = "";
+    n.getParam("robot_name", param);
+    ROS_INFO("exec buger_sakuteki");
 
-  pub = n.advertise<std_msgs::Float32MultiArray>("/" + param + "/array", 5);
+    array.data.resize(5);
 
-  // callback関数の登録
-  sub_ = n.subscribe("/" + param + "/image_raw", 10, &imageCallback);
+    pub_ = n.advertise<std_msgs::Float32MultiArray>("/" + param + "/array", 5);
 
-  // publishserオブジェクトの生成
-  // サンプルではImageデータをpublishする
-  image_transport::ImageTransport it(n);
-  pub_image = it.advertise("/" + param + "/out_image", 1);
+    // callback関数の登録
+    sub_ = n.subscribe("/" + param + "/image_raw", 10, &imageCallback);
 
-  // loop処理
-  ros::spin();
-  return 0;
+    // publishserオブジェクトの生成
+    // サンプルではImageデータをpublishする
+    image_transport::ImageTransport it(n);
+    pub_image_ = it.advertise("/" + param + "/out_image", 1);
+
+    // loop処理
+    ros::spin();
+    return 0;
 }

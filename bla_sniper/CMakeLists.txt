@@ -28,7 +28,7 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
   )
 
-add_executable(bla_sniper src/camera_subscriber.cpp)
+add_executable(bla_sniper src/ar_sniper.cpp)
 target_link_libraries(bla_sniper
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
