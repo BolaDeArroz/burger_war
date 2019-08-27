@@ -118,6 +118,7 @@ def detect_enemy_robot(frame):
     # rnb_burger = createMaskImage(img, [20 , 100], [20, 100], [20, 100])
     # hsv
     rnb_burger = createMaskImage(img_gblur, [90 , 110], [30, 60], [70, 105])  
+    # cut pixcel upper 200, 
     #cv2.imshow("rnb_burger0", rnb_burger)
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4, 4)))
     #cv2.imshow("rnb_burger1", rnb_burger)
@@ -133,8 +134,9 @@ def detect_enemy_robot(frame):
     result_dict['burger'] = contours
     return result_dict
 
-    
 
+def upper_cut_image(origin_image):
+    pass
 
 def calc_enemy_center(contours):
     maxCont=contours[0]
@@ -256,9 +258,11 @@ def get_tracking_info(original_image):
     result_dict = {}
     enemy_center = 0
     enemy_area = 0
+    #  Illumination Invariant Measure
+    IIM_img = Normalization(original_image)
     # get contours from enemy
-    enemy_robot_contours = detect_enemy_robot(original_image)
-    cv2.imshow("Image", original_image)
+    enemy_robot_contours = detect_enemy_robot(IIM_img)
+    cv2.imshow("Image", IIM_img)
     cv2.waitKey(1)
 
     red_ball_contours = enemy_robot_contours['red_ball']

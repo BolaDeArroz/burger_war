@@ -9,6 +9,15 @@
     </include>
 
     <!-- my program node -->
+    <node pkg="aruco_ros" type="marker_publisher" name="bla_sniper_aruco">
+       <param name="use_camera_info" value="False"/>
+       <remap from="/image" to="snipe_image" />
+       <remap from="~markers" to="target_id" />
+    </node>
+    <node pkg="bla_sniper" type="bla_sniper" name="bla_sniper" output="screen">
+      <remap from="~in_image" to="image_raw"/>
+      <remap from="~out_image" to="snipe_image"/>
+    </node>
     <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>

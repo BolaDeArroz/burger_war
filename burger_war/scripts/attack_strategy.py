@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import cv2
 import math
-import numpy as np
 import rospy
 import tf
 
-from cv_bridge import CvBridge
 from std_msgs.msg import Float32MultiArray
 
 from attackrun import AttackBot
@@ -21,14 +18,14 @@ class AttackStrategy():
         self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.move_callback)
 
     def init_vars(self, move, size, width, t):
-        x, y, _, th = calc_enemy_local(move, size, width)
+        x, y, _ = calc_enemy_local(move, size, width)
 
         self.detection_data = True
         self.move_data = move
         self.size_data = size
         self.width_data = width
-        self.my_map = None
-        self.last_local = (x, y, th)
+        self.last_my_map = None
+        self.last_enemy_local = (x, y)
         self.last_time = t
         self.detection_time = 0
 
@@ -46,24 +43,24 @@ class AttackStrategy():
             self.rate.sleep()
 
         if res == 0x01:            
-            mx, my = local_to_map(self.last_local[0], self.last_local[1], self.my_map[0], self.my_map[1], self.my_map[2])
+            mx, my, ma = local_to_map(self.last_enemy_local[0], self.last_enemy_local[1], self.last_my_map[0], self.last_my_map[1], self.last_my_map[2])
 
-            AttackBot().attack_war(mx, my, self.last_local[2])
+            AttackBot().attack_war(mx, my, ma)
 
     def strategy(self, t):
         dt = (t - self.last_time).to_sec()
 
-        self.my_map = get_my_map(self.tf_listener, self.name)
+        self.last_my_map = get_my_map(self.tf_listener, self.name)
 
-        if (dt < 0.001) or (self.my_map is None):
+        if (dt < 0.001) or (self.last_my_map is None):
             return 0x00
 
-        x, y, ds, th = calc_enemy_local(self.move_data, self.size_data, self.width_data)
+        x, y, ds = calc_enemy_local(self.move_data, self.size_data, self.width_data)
 
-        dx, dy = x - self.last_local[0], y - self.last_local[1]
+        dx, dy = x - self.last_enemy_local[0], y - self.last_enemy_local[1]
         vx, vy = dx / dt, dy / dt
 
-        self.last_local = (x, y, th)
+        self.last_enemy_local = (x, y)
         self.last_time = t
         self.detection_time += dt
 
@@ -71,7 +68,7 @@ class AttackStrategy():
             print("[AttackStrategy] Retire", self.detection_data, ds, vx * vx + vy * vy)
             return 0x02
 
-        elif (self.detection_time > 2.0) or (ds < 0.5):
+        elif (self.detection_time > 1.0) or (ds < 0.5):
             print("[AttackStrategy] Attack", self.detection_time, ds)
             return 0x01
 
@@ -103,21 +100,21 @@ def calc_enemy_local(move, size, width):
     area = size / 2 * math.pi
 
     ds = (-1.1492 * area + 1891.2) / 1000
-    th = (math.pi / 2) - (math.pi / 3) * (move / width * 2)
+    th = (math.pi / 2) - (math.pi / 6) * (float(move) / width * 2)
 
     x = ds * math.cos(th)
     y = ds * math.sin(th)
 
-    return x, y, ds, th
+    return x, y, ds
 
 
 def local_to_map(x, y, ox, oy, a):
-    r = a + math.pi / 2
+    ma = -a + math.pi / 2
 
-    mx = x * math.cos(r) - y * math.sin(r) + ox
-    my = x * math.sin(r) + y * math.cos(r) + oy
+    mx = x * math.cos(ma) + y * math.sin(ma) + ox
+    my = -x * math.sin(ma) + y * math.cos(ma) + oy
 
-    return mx, my
+    return mx, my, ma
 
 
 if __name__ == "__main__":

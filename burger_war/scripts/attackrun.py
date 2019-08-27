@@ -111,7 +111,7 @@ class AttackBot():
         goal.target_pose.pose.orientation.w = q[3]
 
         self.client.send_goal(goal)
-        """
+        
         #wait = self.client.wait_for_result()
         wait = self.client.wait_for_server()
         if not wait:
@@ -119,7 +119,7 @@ class AttackBot():
             rospy.signal_shutdown("Action server not available!")
         else:
             return self.client.get_result()        
-        """
+        
 
 
     def attack_war(self, enemey_position_x, enemey_position_y, enemey_position_yaw):
@@ -170,9 +170,10 @@ class AttackBot():
                 print('Find enemy')
                 # continue navigation
                 if tracking_info['target'] == 'red_ball':
-                    # on the test what go strate
-                    twist = rotation_operate(3)
-                    self.vel_pub.publish(twist)
+                    # on the test what go straight
+                    #twist = rotation_operate(3)
+                    #self.vel_pub.publish(twist)
+                    pass
                 elif tracking_info['target'] == 'green_side' or tracking_info['target'] == 'burger':
                     if TRACKING_MODE == False:
                         self.client.cancel_goal()
@@ -180,7 +181,7 @@ class AttackBot():
                     TRACKING_MODE = True
             else:
                 detect_count = detect_count + 1
-                if TRACKING_MODE == True or detect_count > 20:
+                if TRACKING_MODE == True or detect_count > 10:
                     # missing enemy
                     print('Missing enemy')
                     """
