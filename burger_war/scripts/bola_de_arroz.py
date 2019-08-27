@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from navirun import NaviBot
-from attackrun import AttackBot
 from attack_strategy import AttackStrategy
 
 import rospy
@@ -17,11 +16,11 @@ def bola_de_arroz_main():
         while not rospy.is_shutdown():
             # searching enemy
             if changed:   
-                move_x,size=navi_bot.strategy()
+                move_x, size = navi_bot.strategy()
                 print('navi')
                 changed = False
             else:
-                attack_strategy.run(move_x, size)
+                attack_strategy.run(int(move_x), int(size), 640)
                 changed = True
                 print('attack')
             r.sleep()
