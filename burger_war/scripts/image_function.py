@@ -75,17 +75,19 @@ def detect_enemy_robot(frame):
 
     # convert to HSV (Hue, Saturation, Value(Brightness))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    cv2.imshow("Hue", hsv[:, :, 0])
+    #cv2.imshow("Hue", hsv[:, :, 0])
     """
     use the bgr method at gazebo because hsv not show
     """
     # find red ball
     # bgr
-    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
     # hsv
+    """
     rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
     rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
     rnb_red = rnb_red1 + rnb_red2
+    """
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
@@ -113,7 +115,7 @@ def detect_enemy_robot(frame):
     # rgb
     img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
     #cv2.imshow("img_gblur", img_gblur)
-    # rnb_burger = createMaskImage(img_gblur, [20 , 100], [20, 100], [20, 100])
+    # rnb_burger = createMaskImage(img, [20 , 100], [20, 100], [20, 100])
     # hsv
     rnb_burger = createMaskImage(img_gblur, [90 , 110], [30, 60], [70, 105])  
     #cv2.imshow("rnb_burger0", rnb_burger)
@@ -266,7 +268,7 @@ def get_tracking_info(original_image):
         enemy_center = calc_enemy_center(red_ball_contours)
         enemy_area = calc_enemy_area(red_ball_contours)
         # outside of tracking area 
-        if enemy_area < 1200:
+        if enemy_area < 1400:
             """
             you can write navigation code using enemy coordinate
             """

@@ -24,6 +24,10 @@ def rotation_operate(command):
     elif command == 2:
         x = 0
         th = 0.5
+    # forward
+    elif command == 3:
+        x = 0.1
+        th = 0.0
     elif command == 99:
         x = 0
         th = 0
