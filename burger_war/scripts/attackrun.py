@@ -111,7 +111,7 @@ class AttackBot():
         goal.target_pose.pose.orientation.w = q[3]
 
         self.client.send_goal(goal)
-        """
+        
         #wait = self.client.wait_for_result()
         wait = self.client.wait_for_server()
         if not wait:
@@ -119,7 +119,7 @@ class AttackBot():
             rospy.signal_shutdown("Action server not available!")
         else:
             return self.client.get_result()        
-        """
+        
 
 
     def attack_war(self, enemey_position_x, enemey_position_y, enemey_position_yaw):
@@ -127,9 +127,11 @@ class AttackBot():
         r = rospy.Rate(30) # change speed 30fps
         # listener = tf.TransformListener()
         now = rospy.Time.now()
-        timeout_dur = 20  # default time out
+        timeout_dur = 10  # default time out
         # start time log
         start_time = now
+        # detect counter
+        detect_count = 0
         #listener.waitForTransform('/' + self.name +"/map",self.name +"/base_link", rospy.Time(),rospy.Duration(4.0))   
         while not rospy.is_shutdown():
             # failed move_base
@@ -152,7 +154,7 @@ class AttackBot():
             obtain_marker_list = check_possession_marker(self.war_state)
             if '_L' in obtain_marker_list and '_R' in obtain_marker_list:
                 # TODO
-                timeout_dur = 30
+                timeout_dur = 15
             # time out
             if now.secs - start_time.secs > timeout_dur:
                 print('Time Out!!!')
@@ -168,6 +170,9 @@ class AttackBot():
                 print('Find enemy')
                 # continue navigation
                 if tracking_info['target'] == 'red_ball':
+                    # on the test what go straight
+                    #twist = rotation_operate(3)
+                    #self.vel_pub.publish(twist)
                     pass
                 elif tracking_info['target'] == 'green_side' or tracking_info['target'] == 'burger':
                     if TRACKING_MODE == False:
@@ -175,7 +180,8 @@ class AttackBot():
                         print('stop navigation')
                     TRACKING_MODE = True
             else:
-                if TRACKING_MODE == True:
+                detect_count = detect_count + 1
+                if TRACKING_MODE == True or detect_count > 10:
                     # missing enemy
                     print('Missing enemy')
                     """
@@ -186,9 +192,12 @@ class AttackBot():
                 TRACKING_MODE = False
             # change navigation to tracking
             if TRACKING_MODE is False:
+                # set enemy position
                 result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
-                #print('++++++++++++++++++', result)
+                print('++++++++++++++++++', result)
+                self.client.cancel_goal()
             else:
+                # force stop robot
                 command = 99
                 mu_x = tracking_info['center'][0] 
                 if tracking_info['target'] == 'burger':

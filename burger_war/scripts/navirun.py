@@ -73,9 +73,9 @@ class NaviBot():
         return obtain_targets_list
 
     def enemy_detect_callback(self,array):
-        #print("EnemyDetect", array.data[0], self.is_enemy_detected)	   
-        #if array.data[2] >= 11 and int(array.data[0]!=0):
-        #    self.is_enemy_detected = True
+        print("EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])	   
+        if array.data[2] >= 15 and int(array.data[0]!=0):
+            self.is_enemy_detected = True
         self.array=array
 
     def warstate_callback(self, data):
