@@ -15,14 +15,14 @@ def bola_de_arroz_main():
     try:
         while not rospy.is_shutdown():
             # searching enemy
-            if changed:   
-                move_x, size = navi_bot.strategy()
+            if changed:
                 print('navi')
+                move_x, size = navi_bot.strategy()
                 changed = False
             else:
+                print('attack')
                 attack_strategy.run(int(move_x), int(size), 640)
                 changed = True
-                print('attack')
             r.sleep()
     except KeyboardInterrupt:
         changed = False
