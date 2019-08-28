@@ -3,7 +3,7 @@ local_costmap:
   robot_base_frame: base_footprint
 
 #  robot_radius: 0.1
-#  inflation_radius: 0.1
+  inflation_radius: 0.05
 
   update_frequency: 5.0
   publish_frequency: 5.0
@@ -13,5 +13,5 @@ local_costmap:
   rolling_window: true
   width: 3
   height: 3
-  resolution: 0.025
+  resolution: 0.01
   
