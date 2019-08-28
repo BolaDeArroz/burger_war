@@ -64,8 +64,8 @@ class AttackStrategy():
         self.last_time = t
         self.detection_time += dt
 
-        if (not self.detection_data) or (ds > 2.0) or (vx * vx + vy * vy > 0.25 * 0.25):
-            print("[AttackStrategy] Retire", self.detection_data, ds, vx * vx + vy * vy)
+        if (not self.detection_data) or (ds > 2.0):
+            print("[AttackStrategy] Retire", self.detection_data, ds)
             return 0x02
 
         elif (self.detection_time > 1.0) or (ds < 0.5):

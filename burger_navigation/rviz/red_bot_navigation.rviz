@@ -10,6 +10,7 @@ Panels:
         - /TF1/Tree1
         - /Planner Plan1
         - /Global Map1
+        - /Global Map1/Planner1
         - /Local Map1
       Splitter Ratio: 0.5
     Tree Height: 814
