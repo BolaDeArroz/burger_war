@@ -13,7 +13,7 @@ TebLocalPlannerROS:
  feasibility_check_no_poses: 5
     
  # Robot
-         
+        
  max_vel_x: 0.18
  max_vel_x_backwards: 0.18
  max_vel_theta: 1.0
@@ -47,13 +47,13 @@ TebLocalPlannerROS:
  optimization_activate: True
  optimization_verbose: False
  penalty_epsilon: 0.05
- weight_max_vel_x: 20
- weight_max_vel_theta: 10
- weight_acc_lim_x: 1
- weight_acc_lim_theta: 1
+ weight_max_vel_x: 2.0
+ weight_max_vel_theta: 1.0
+ weight_acc_lim_x: 1.0
+ weight_acc_lim_theta: 1.0
  weight_kinematics_nh: 1000
- weight_kinematics_forward_drive: 0
- weight_kinematics_turning_radius: 0
+ weight_kinematics_forward_drive: 1.0
+ weight_kinematics_turning_radius: 1.0
  weight_optimaltime: 1
  weight_obstacle: 50
  weight_dynamic_obstacle: 10 # not in use yet
