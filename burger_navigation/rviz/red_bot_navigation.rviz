@@ -10,9 +10,7 @@ Panels:
         - /TF1/Tree1
         - /Planner Plan1
         - /Global Map1
-        - /Global Map1/Planner1
         - /Local Map1
-        - /Local Map1/Polygon1
       Splitter Ratio: 0.5
     Tree Height: 814
   - Class: rviz/Selection
@@ -306,7 +304,7 @@ Visualization Manager:
           Use Fixed Frame: true
           Use rainbow: true
           Value: false
-      Enabled: true
+      Enabled: false
       Name: Local Map
     - Alpha: 1
       Arrow Length: 0.0500000007
@@ -338,6 +336,39 @@ Visualization Manager:
       Shape: Arrow
       Topic: /red_bot/move_base/current_goal
       Unreliable: false
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.300000012
+      Head Length: 0.200000003
+      Length: 0.300000012
+      Line Style: Lines
+      Line Width: 0.0299999993
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.0299999993
+      Shaft Diameter: 0.100000001
+      Shaft Length: 0.100000001
+      Topic: /red_bot/move_base/TebLocalPlannerROS/local_plan
+      Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /red_bot/move_base/TebLocalPlannerROS/teb_markers
+      Name: Marker
+      Namespaces:
+        PointObstacles: true
+        RobotFootprintModel: true
+        TebContainer: true
+      Queue Size: 1
       Value: true
   Enabled: true
   Global Options:
@@ -393,5 +424,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1279
-  X: 65
+  X: 364
   Y: 25
