@@ -73,7 +73,7 @@ class NaviBot():
         return obtain_targets_list
 
     def enemy_detect_callback(self,array):
-        print("EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])	   
+        print("[NAVIRUN]EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])	   
         if array.data[2] >= 15 and int(array.data[0]!=0):
             self.is_enemy_detected = True
         self.array=array
@@ -114,7 +114,7 @@ class NaviBot():
         cmd_vel.angular.z=ang_z
         end_time_sec=float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000)+time_sec)
         while not rospy.is_shutdown():
-            rospy.loginfo("cmd_vel.linear.x="+str(cmd_vel.linear.x)+",cmd_vel.linear.y="+str(cmd_vel.linear.y)+",cmd_vel.angular.z="+str(cmd_vel.angular.z))
+            rospy.loginfo("[NAVIRUN]cmd_vel.linear.x="+str(cmd_vel.linear.x)+",cmd_vel.linear.y="+str(cmd_vel.linear.y)+",cmd_vel.angular.z="+str(cmd_vel.angular.z))
             self.vel_pub.publish(cmd_vel)
             if (self.is_enemy_detected) or (end_time_sec < float(rospy.Time.now().secs+rospy.Time.now().nsecs/(1000*1000*1000))):
                 break
@@ -123,12 +123,12 @@ class NaviBot():
         self.vel_pub.publish(Twist())#stop
 
     def recovery_abort_behavior(self):   
-        print("recovery_abort_behavior")
+        print("[NAVIRUN]recovery_abort_behavior")
         #一定距離バック
         self.pub_vel(-0.15,0,0,0.8)
 
     def swing_behavior(self):
-        print("swing_behavior")
+        print("[NAVIRUN]swing_behavior")
         #時計方向に90度回転
         self.pub_vel(0,0,-3.1415/7,0.7)
         #反時計方向に180度回転
@@ -137,9 +137,11 @@ class NaviBot():
         self.pub_vel(0,0,-3.1415/7,0.7)
 
     def swing_behavior_right(self):
-        print("swing_behavior")
+        print("[NAVIRUN]swing_behavior")
         #時計方向に90度回転
         self.pub_vel(0,0,-3.1415/3.5,1.6)
+        #一時停止
+        self.pub_vel(0,0,0,0.5)
         #反時計方向に90度回転
         self.pub_vel(0,0,3.1415/3.5,1.4)
 
@@ -156,8 +158,8 @@ class NaviBot():
     def go_waypoint(self,waypoint,is_passing=False):
         r = rospy.Rate(5) # change speed 5fps
         self.setGoal(waypoint[0],waypoint[1],waypoint[2])
-        rospy.loginfo("state="+str(self.client.get_state()))
-        print("is_enemy_detected",self.is_enemy_detected)
+        rospy.loginfo("[NAVIRUN]state="+str(self.client.get_state()))
+        print("[NAVIRUN]is_enemy_detected",self.is_enemy_detected)
         ret="FAILED"
         while self.client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,actionlib_msgs.msg.GoalStatus.PENDING] and not self.is_enemy_detected:
             r.sleep()
@@ -167,8 +169,8 @@ class NaviBot():
             # map座標系の現在位置をｔｆから取得する
             position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
             
-            # is_passingが有効の時、ウェイポイントのゴールの周囲0.25ｍ以内にロボットが来たら、次のウェイポイントを発行する
-            if is_passing and (math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.25) :
+            # is_passingが有効の時、ウェイポイントのゴールの周囲0.15ｍ以内にロボットが来たら、次のウェイポイントを発行する
+            if is_passing and (math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 ) <= 0.15) :
                 self.client.cancel_goal()
                 ret="SUCCESS"
                 break
@@ -183,29 +185,29 @@ class NaviBot():
             ret="FAILED"
             
         if self.is_enemy_detected:
-            rospy.loginfo("enemy_detected!!")
+            rospy.loginfo("[NAVIRUN]enemy_detected!!")
             self.client.cancel_goal()  
             ret="FAILED"
         
         self.client.cancel_goal()
-        print("go_waypoint_result=",ret)
+        print("[NAVIRUN]go_waypoint_result=",ret)
         return ret
     
     def wall_run(self):
         #壁沿い走行時の地点リスト
         wall_run_waypoints = [
-            {"pos":[-0.86, 0.0,3.1415/2],"is_swing":True},
-            {"pos":[-0.81, 0.40,3.1415/4],"is_swing":False},
-            {"pos":[-0.36, 0.83,       0],"is_swing":True},
-            {"pos":[-0.00, 0.83,       0],"is_swing":True},
-            {"pos":[ 0.44, 0.90,-3.1415/4],"is_swing":False},
-            {"pos":[ 0.85, 0.47,-3.1415/4*2],"is_swing":True},
-            {"pos":[ 0.85, 0.00,-3.1415/4*2],"is_swing":True},
-            {"pos":[ 0.94,-0.33,-3.1415/4*3],"is_swing":False},
-            {"pos":[ 0.45,-0.87,-3.1415],"is_swing":True},
-            {"pos":[ 0.00,-0.87,-3.1415],"is_swing":True},
-            {"pos":[-0.46,-0.91,3.1415/4*3],"is_swing":False},
-            {"pos":[-0.86,-0.47,3.1415/4*2],"is_swing":False},
+            {"pos":[-0.86, 0.0,3.1415/2],"is_swing":True,"is_passing":False},
+            {"pos":[-0.81, 0.40,3.1415/4],"is_swing":False,"is_passing":True},
+            {"pos":[-0.36, 0.83,       0],"is_swing":False,"is_passing":True},
+            {"pos":[-0.00, 0.83,       0],"is_swing":True,"is_passing":False},
+            {"pos":[ 0.44, 0.90,-3.1415/4],"is_swing":False,"is_passing":True},
+            {"pos":[ 0.85, 0.47,-3.1415/4*2],"is_swing":False,"is_passing":True},
+            {"pos":[ 0.85, 0.00,-3.1415/4*2],"is_swing":True,"is_passing":False},
+            {"pos":[ 0.94,-0.33,-3.1415/4*3],"is_swing":False,"is_passing":True},
+            {"pos":[ 0.45,-0.87,-3.1415],"is_swing":False,"is_passing":True},
+            {"pos":[ 0.00,-0.87,-3.1415],"is_swing":True,"is_passing":False},
+            {"pos":[-0.46,-0.91,3.1415/4*3],"is_swing":False,"is_passing":True},
+            {"pos":[-0.86,-0.47,3.1415/4*2],"is_swing":False,"is_passing":True},
         ]
         #現在位置計算
         cur_position, _ = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link", rospy.Time())
@@ -219,7 +221,7 @@ class NaviBot():
         while not self.is_enemy_detected:
             waypoint=wall_run_waypoints[next_waypoint_idx]
             rospy.loginfo(str(next_waypoint_idx))
-            if self.go_waypoint(waypoint["pos"],is_passing=False) == "SUCCESS":
+            if self.go_waypoint(waypoint["pos"],is_passing=waypoint["is_passing"]) == "SUCCESS":
                 if waypoint["is_swing"]:
                     self.swing_behavior_right()#首を降って索敵
                 if next_waypoint_idx+1 >= len(wall_run_waypoints):
@@ -282,10 +284,10 @@ class NaviBot():
         try:
             self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         except (tf.LookupException, tf.ConnectivityException):
-            rospy.logerr("tf_err")
+            rospy.logerr("[NAVIRUN]tf_err")
         except Exception as e:
             # I think this error that tf2_ros.TransformException
-            print('SSSSSSSSSSSSSSSSSSSs', e)
+            print('[NAVIRUN]SSSSSSSSSSSSSSSSSSSs', e)
         self.tf_listener.waitForTransform(self.name +"/map",self.name +"/base_link",rospy.Time(),rospy.Duration(4.0))
         
 
