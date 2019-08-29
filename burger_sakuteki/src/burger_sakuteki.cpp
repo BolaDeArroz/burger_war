@@ -15,6 +15,8 @@ cv_bridge::CvImage bridge_;
 ros::Publisher pub_;
 std_msgs::Float32MultiArray array;
 
+
+#define CLAMP(x, a, b)   ( (x) > (b) ? (b) : ( (x) < (a) ? (a) : (x) ) )
 #define nTARGETCOLOR    1
 CvScalar targetColor[nTARGETCOLOR] = {
     CV_RGB(255,0,0),    // 赤玉の色(red)
@@ -44,8 +46,6 @@ bool sakuteki(cv_bridge::CvImagePtr cv_msg, CvScalar searchColor)
             int difGreen = abs(get_green(searchColor)-cv_msg->image.data[index+1]);
             int difBlue = abs(get_blue(searchColor)-cv_msg->image.data[index+0]);
 
-            //ROS_INFO("difRed=%d, difGreen= %d, difBlue=%d", difRed, difGreen, difBlue);
-
             //RGB各色が許容値以内の場合（近似色である場合）
             if(difRed < tolerance && difGreen < tolerance && difBlue < tolerance)
             {
@@ -65,6 +65,31 @@ bool sakuteki(cv_bridge::CvImagePtr cv_msg, CvScalar searchColor)
     return detection;
 }
 
+void adjust_bright(cv_bridge::CvImagePtr cv_msg, double brightScale)
+{
+    double b, g, r;
+
+    int scan_start_y = 0;
+    int sca_end_y = 0;
+
+    for(int i = scan_start_y; i < cv_msg->image.rows-sca_end_y; i++) 
+    {
+        int y = i*cv_msg->image.step;
+        int index = 0;
+
+        for(int x = 0; x < cv_msg->image.cols; x++)
+        {
+            index = y+(x*3);
+            b = cv_msg->image.data[index+2];
+            g = cv_msg->image.data[index+1];
+            r = cv_msg->image.data[index+0];
+	    cv_msg->image.data[index+2] = CLAMP(b + (sqrt(b) - b) * brightScale, 0, 255);
+            cv_msg->image.data[index+1] = CLAMP(g + (sqrt(g) - g) * brightScale, 0, 255);
+            cv_msg->image.data[index+0] = CLAMP(r + (sqrt(r) - r) * brightScale, 0, 255);
+        }
+    }
+}
+
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
   //ROS_INFO("get image");
@@ -75,9 +100,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
   //////////////////////////////////////////
   // ここにイメージ処理を実装する
   
-  // サンプルとして 赤で円をオーバーレイ描画する
-  //cv::circle(cv_msg->image, cv::Point(100, 100), 100, CV_RGB(255,0,0), -1);
-
     /*********************************************************/
     // ここからOpenCVを使用せずに赤玉の位置を特定するコード
     bool detection = false;
@@ -88,11 +110,13 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
     xmax = 0;
     ymax = 0;
 
+    adjust_bright(cv_msg, -0.75);
+
     // 赤玉を探す
     detection = sakuteki(cv_msg, targetColor[0]);
     array.data[0] = detection;
 
-    //ROS_INFO("detection=%d", detection);
+    ROS_INFO("detection=%d", detection);
 
     if(detection == true)
     {
