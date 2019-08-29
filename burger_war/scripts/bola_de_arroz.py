@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from navirun import NaviBot
-from attack_strategy import AttackStrategy
+from attack_strategy import AttackStrategy, ATK_STRATEGY_RETIRE_DISTANCE
 
 import rospy
 
@@ -12,6 +12,7 @@ def bola_de_arroz_main():
     attack_strategy = AttackStrategy()
     r = rospy.Rate(5) # change speed 5fps
     changed = True
+    retire_distance_count = 0
     try:
         while not rospy.is_shutdown():
             # searching enemy
@@ -21,8 +22,11 @@ def bola_de_arroz_main():
                 changed = False
             else:
                 print('attack')
-                attack_strategy.run(int(move_x), int(size), int(width))
+                res = attack_strategy.run(int(move_x), int(size), int(width), retire_distance_count >= 20)
                 changed = True
+                retire_distance_count %= 20
+                if res == ATK_STRATEGY_RETIRE_DISTANCE:
+                    retire_distance_count += 1
             r.sleep()
     except KeyboardInterrupt:
         changed = False

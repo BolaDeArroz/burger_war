@@ -17,20 +17,21 @@ class AttackStrategy():
         self.tf_listener = tf.TransformListener()
         self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.move_callback)
 
-    def init_vars(self, move, size, width, t):
+    def init_vars(self, move, size, width, forced, t):
         x, y, _ = calc_enemy_local(move, size, width)
 
         self.detection_data = True
         self.move_data = move
         self.size_data = size
         self.width_data = width
-        self.last_my_map = None
+        self.forced = forced
+        self.last_my_map = get_my_map(self.tf_listener, self.name)
         self.last_enemy_local = (x, y)
         self.last_time = t
         self.detection_time = 0
 
-    def run(self, move, size, width):
-        self.init_vars(move, size, width, rospy.Time.now())
+    def run(self, move, size, width, forced):
+        self.init_vars(move, size, width, forced, rospy.Time.now())
 
         while not rospy.is_shutdown():
             res = self.strategy(rospy.Time.now())
@@ -44,6 +45,8 @@ class AttackStrategy():
             mx, my, ma = local_to_map(self.last_enemy_local, self.last_my_map)
 
             AttackBot().attack_war(mx, my, ma)
+
+        return res
 
     def strategy(self, t):
         dt = (t - self.last_time).to_sec()
@@ -61,9 +64,17 @@ class AttackStrategy():
         self.last_time = t
         self.detection_time += dt
 
-        if (not self.detection_data) or (ds > 1.7) or (vx * vx + vy * vy > 0.04):
-            print("[AttackStrategy] Retire", self.detection_data, ds, vx * vx + vy * vy)
-            return ATK_STRATEGY_RETIRE
+        if (self.forced):
+            print("[AttackStrategy] Attack (Forced)")
+            return ATK_STRATEGY_ATTACK
+
+        elif (ds > 1.7):
+            print("[AttackStrategy] Retire (Distance)", ds)
+            return ATK_STRATEGY_RETIRE_DISTANCE
+
+        elif (not self.detection_data) or (vx * vx + vy * vy > 0.04):
+            print("[AttackStrategy] Retire (Other)", self.detection_data, vx * vx + vy * vy)
+            return ATK_STRATEGY_RETIRE_OTHER
 
         elif (self.detection_time > 1.0) or (ds < 0.6):
             print("[AttackStrategy] Attack", self.detection_time, ds)
@@ -122,4 +133,5 @@ def local_to_map(local, my_map):
 
 ATK_STRATEGY_CONTINUE = 0x00
 ATK_STRATEGY_ATTACK = 0x01
-ATK_STRATEGY_RETIRE = 0x02
+ATK_STRATEGY_RETIRE_DISTANCE = 0x02
+ATK_STRATEGY_RETIRE_OTHER = 0x03
