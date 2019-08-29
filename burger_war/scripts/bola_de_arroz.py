@@ -17,11 +17,11 @@ def bola_de_arroz_main():
             # searching enemy
             if changed:
                 print('navi')
-                move_x, size = navi_bot.strategy()
+                move_x, size, width = navi_bot.strategy()
                 changed = False
             else:
                 print('attack')
-                attack_strategy.run(int(move_x), int(size), 640)
+                attack_strategy.run(int(move_x), int(size), int(width))
                 changed = True
             r.sleep()
     except KeyboardInterrupt:

@@ -301,7 +301,7 @@ class NaviBot():
         else:#MARKER
             self.marker_run()
 
-        return self.array.data[1], self.array.data[2]
+        return self.array.data[1], self.array.data[2], self.array.data[3]
 
 if __name__ == '__main__':
     rospy.init_node('navirun')

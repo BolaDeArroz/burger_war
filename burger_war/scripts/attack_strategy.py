@@ -30,20 +30,18 @@ class AttackStrategy():
         self.detection_time = 0
 
     def run(self, move, size, width):
-        print("[AttackStrategy] Start")
-
         self.init_vars(move, size, width, rospy.Time.now())
 
         while not rospy.is_shutdown():
             res = self.strategy(rospy.Time.now())
 
-            if res != 0x00:
+            if res != ATK_STRATEGY_CONTINUE:
                 break
 
             self.rate.sleep()
 
-        if res == 0x01:            
-            mx, my, ma = local_to_map(self.last_enemy_local[0], self.last_enemy_local[1], self.last_my_map[0], self.last_my_map[1], self.last_my_map[2])
+        if res == ATK_STRATEGY_ATTACK:
+            mx, my, ma = local_to_map(self.last_enemy_local, self.last_my_map)
 
             AttackBot().attack_war(mx, my, ma)
 
@@ -53,28 +51,27 @@ class AttackStrategy():
         self.last_my_map = get_my_map(self.tf_listener, self.name)
 
         if (dt < 0.001) or (self.last_my_map is None):
-            return 0x00
+            return ATK_STRATEGY_CONTINUE
 
         x, y, ds = calc_enemy_local(self.move_data, self.size_data, self.width_data)
 
-        dx, dy = x - self.last_enemy_local[0], y - self.last_enemy_local[1]
-        vx, vy = dx / dt, dy / dt
+        vx, vy = calc_velocity((x, y), self.last_enemy_local, dt)
 
         self.last_enemy_local = (x, y)
         self.last_time = t
         self.detection_time += dt
 
-        if (not self.detection_data) or (ds > 2.0):
-            print("[AttackStrategy] Retire", self.detection_data, ds)
-            return 0x02
+        if (not self.detection_data) or (ds > 1.7) or (vx * vx + vy * vy > 0.04):
+            print("[AttackStrategy] Retire", self.detection_data, ds, vx * vx + vy * vy)
+            return ATK_STRATEGY_RETIRE
 
-        elif (self.detection_time > 1.0) or (ds < 0.5):
+        elif (self.detection_time > 1.0) or (ds < 0.6):
             print("[AttackStrategy] Attack", self.detection_time, ds)
-            return 0x01
+            return ATK_STRATEGY_ATTACK
 
         else:
             print("[AttackStrategy] Continue")
-            return 0x00
+            return ATK_STRATEGY_CONTINUE
 
     def move_callback(self, data):
         self.detection_data = int(data.data[0]) != 0
@@ -97,7 +94,7 @@ def get_my_map(tf_listener, bot_name):
 
 
 def calc_enemy_local(move, size, width):
-    area = size / 2 * math.pi
+    area = float(size) / 2 * math.pi
 
     ds = (-1.1492 * area + 1891.2) / 1000
     th = (math.pi / 2) - (math.pi / 6) * (float(move) / width * 2)
@@ -108,14 +105,21 @@ def calc_enemy_local(move, size, width):
     return x, y, ds
 
 
-def local_to_map(x, y, ox, oy, a):
-    ma = -a + math.pi / 2
+def calc_velocity(old, new, dt):
+    dx, dy = new[0] - old[0], new[1] - old[1]
 
-    mx = x * math.cos(ma) + y * math.sin(ma) + ox
-    my = -x * math.sin(ma) + y * math.cos(ma) + oy
+    return dx / dt, dy / dt
+
+
+def local_to_map(local, my_map):
+    ma = -my_map[2] + math.pi / 2
+
+    mx = local[0] * math.cos(ma) + local[1] * math.sin(ma) + my_map[0]
+    my = local[1] * math.cos(ma) - local[0] * math.sin(ma) + my_map[1]
 
     return mx, my, ma
 
 
-if __name__ == "__main__":
-    AttackStrategy().run(0, 0)
+ATK_STRATEGY_CONTINUE = 0x00
+ATK_STRATEGY_ATTACK = 0x01
+ATK_STRATEGY_RETIRE = 0x02
