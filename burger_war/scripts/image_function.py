@@ -69,25 +69,24 @@ def createMaskImage(hsv, hue, sat, val):
 
     return cv2.inRange(hsv, np.array([hmin, smin, vmin]), np.array([hmax, smax, vmax]))
 
+
 def detect_enemy_robot(frame):
     result_dict = {}
     img = frame
 
     # convert to HSV (Hue, Saturation, Value(Brightness))
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    #cv2.imshow("Hue", hsv[:, :, 0])
+    cv2.imshow("Hue", hsv[:, :, 0])
     """
     use the bgr method at gazebo because hsv not show
     """
     # find red ball
     # bgr
-    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
     # hsv
-    """
     rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
     rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
     rnb_red = rnb_red1 + rnb_red2
-    """
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
@@ -114,19 +113,22 @@ def detect_enemy_robot(frame):
     # burger
     # rgb
     img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
-    #cv2.imshow("img_gblur", img_gblur)
-    # rnb_burger = createMaskImage(img, [20 , 100], [20, 100], [20, 100])
+    cv2.imshow("img_gblur", img_gblur)
+    # rnb_burger = createMaskImage(img_gblur, [20 , 100], [20, 100], [20, 100])
     # hsv
-    rnb_burger = createMaskImage(img_gblur, [90 , 110], [30, 60], [70, 105])  
-    # cut pixcel upper 200, 
-    #cv2.imshow("rnb_burger0", rnb_burger)
+    rnb_burger = createMaskImage(img_gblur, [90 , 110], [30, 60], [70, 155])  
+    cv2.imshow("rnb_burger0", rnb_burger)
+    
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4, 4)))
-    #cv2.imshow("rnb_burger1", rnb_burger)
-    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5, 5)))
-    #cv2.imshow("rnb_burger2", rnb_burger)
+    cv2.imshow("rnb_burger1", rnb_burger)
+    rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9, 9)))
+    cv2.imshow("rnb_burger2", rnb_burger)
+    
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(39, 39)))
-    #cv2.imshow("rnb_burger3", rnb_burger)
+    cv2.imshow("rnb_burger3", rnb_burger)
     rnb_burger = cv2.morphologyEx(rnb_burger, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(89,89)))
+    
+    
     cv2.imshow("rnb_burger", rnb_burger)
     im, contours, hierarchy = cv2.findContours(rnb_burger, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     Draw_txt(im, contours, hierarchy,img)
