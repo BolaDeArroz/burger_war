@@ -14,12 +14,18 @@ import actionlib
 import actionlib_msgs
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
+from image_function import detect_enemy_robot
+
+
 # Ref: https://hotblackrobotics.github.io/en/blog/2018/01/29/action-client-py/
 
 #from std_msgs.msg import String
-#from sensor_msgs.msg import Image
-#from cv_bridge import CvBridge, CvBridgeError
-#import cv2
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+import cv2
+from sensor_msgs.msg import CameraInfo as CamInfoMSG
+import image_geometry
+import copy
 
 
 
@@ -50,6 +56,25 @@ class NaviBot():
         self.war_state = None
         self.war_state_sub = rospy.Subscriber("/"+self.name+"/war_state", String, self.warstate_callback)
 
+        # camera subscribver
+        # for convert image topic to opencv obj
+        self.image = None
+        self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber('/{}/image_raw'.format(self.name), Image, self.image_callback)
+        self.camerainfo_sub = rospy.Subscriber("/{}/camera_info".format(self.name),CamInfoMSG, self.camerainfo_callback)
+
+    def camerainfo_callback(self,data):
+        self.camera_model = image_geometry.PinholeCameraModel()
+        self.camera_model.fromCameraInfo(data)
+
+    # camera image call back sample
+    # comvert image topic to opencv object and show
+    def image_callback(self, data):
+        try:
+            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            self.original_image = copy.copy(self.image)
+        except CvBridgeError as e:
+            print("***********************", e)
 
     def check_possession_marker(self,war_state):
         obtain_targets_list = []
@@ -73,7 +98,17 @@ class NaviBot():
         return obtain_targets_list
 
     def enemy_detect_callback(self,array):
-        print("[NAVIRUN]EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])	   
+        print("[NAVIRUN]EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])
+        detect_green_result = None
+        if self.image is not None:  
+            detect_green_result = detect_enemy_robot(self.image)
+        print('GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG: ', detect_green_result, array)
+        if detect_green_result != [] and len(array.data) != 0:
+            self.array.data = [1, 0, 0, 0]
+            self.array.data[1]=500
+            self.array.data[2]=500
+            self.array.data[3]=500
+            self.is_enemy_detected = True
         if array.data[2] >= 15 and int(array.data[0]!=0):
             self.is_enemy_detected = True
         self.array=array

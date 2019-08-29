@@ -115,8 +115,8 @@ class AttackBot():
         #wait = self.client.wait_for_result()
         wait = self.client.wait_for_server()
         if not wait:
-            rospy.logerr("Action server not available!")
-            rospy.signal_shutdown("Action server not available!")
+            rospy.logerr("[ATTACK RUN] Action server not available!")
+            rospy.signal_shutdown("[ATTACK RUN] Action server not available!")
         else:
             return self.client.get_result()        
         
@@ -127,7 +127,7 @@ class AttackBot():
         r = rospy.Rate(30) # change speed 30fps
         # listener = tf.TransformListener()
         now = rospy.Time.now()
-        timeout_dur = 10  # default time out
+        timeout_dur = 20  # default time out
         # start time log
         start_time = now
         # detect counter
@@ -136,15 +136,15 @@ class AttackBot():
         while not rospy.is_shutdown():
             # failed move_base
             if self.client.get_state() == actionlib_msgs.msg.GoalStatus.ABORTED:
-                print('ABORTED')
+                print('[ATTACK RUN] ABORTED')
                 self.recovery_abort()
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.REJECTED:
-                print('REJECTED')
+                print('[ATTACK RUN] REJECTED')
                 self.client.cancel_goal()
                 self.recovery_reject()
                 break
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.SUCCEEDED:
-                print('SUCCEEDED')
+                print('[ATTACK RUN] SUCCEEDED')
             """
             elif self.get_state == actionlib_msgs.msg.GoalStatus.LOST:
                 recover_lost()
@@ -154,10 +154,10 @@ class AttackBot():
             obtain_marker_list = check_possession_marker(self.war_state)
             if '_L' in obtain_marker_list and '_R' in obtain_marker_list:
                 # TODO
-                timeout_dur = 15
+                timeout_dur = 35
             # time out
             if now.secs - start_time.secs > timeout_dur:
-                print('Time Out!!!')
+                print('[ATTACK RUN] Time Out!!!')
                 self.client.cancel_goal()
                 break
             if self.image is None:
@@ -167,7 +167,7 @@ class AttackBot():
             print(tracking_info)
             # deciede to navigation or tracking
             if tracking_info != {}:
-                print('Find enemy')
+                print('[ATTACK RUN] Find enemy')
                 # continue navigation
                 if tracking_info['target'] == 'red_ball':
                     # on the test what go straight
@@ -177,13 +177,13 @@ class AttackBot():
                 elif tracking_info['target'] == 'green_side' or tracking_info['target'] == 'burger':
                     if TRACKING_MODE == False:
                         self.client.cancel_goal()
-                        print('stop navigation')
+                        print('[ATTACK RUN] stop navigation')
                     TRACKING_MODE = True
             else:
                 detect_count = detect_count + 1
-                if TRACKING_MODE == True or detect_count > 10:
+                if TRACKING_MODE == True and detect_count > 10:
                     # missing enemy
-                    print('Missing enemy')
+                    print('[ATTACK RUN] Missing enemy')
                     """
                     self.client.cancel_goal()
                     """
@@ -193,9 +193,10 @@ class AttackBot():
             # change navigation to tracking
             if TRACKING_MODE is False:
                 # set enemy position
-                result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
-                print('++++++++++++++++++', result)
-                self.client.cancel_goal()
+                result = self.set_goal(enemey_position_x*0.6, enemey_position_y*0.6, enemey_position_yaw)
+                print('[ATTACK RUN] set enemy position: x = {}, y = {}, yaw = {}'.format(enemey_position_x, enemey_position_y, enemey_position_yaw))
+                print('[ATTACK RUN] set enemy position: result {}'.format(result))
+                #self.client.cancel_goal()
             else:
                 # force stop robot
                 command = 99
