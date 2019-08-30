@@ -35,12 +35,9 @@ class AttackStrategy():
 
             self.rate.sleep()
 
-        print("[AttackStrategy] Enemy Info", self.last_enemy_local.polar)
-        print("[AttackStrategy] MyMap Info", self.last_my_map.a)
-
         if res == ATK_STRATEGY_ATTACK_DYNAMIC:
             enemy_map = local_to_map(self.last_enemy_local, self.last_my_map)
-            print("[AttackStrategy] Target Info", enemy_map.p, enemy_map.a)
+
             AttackBot().attack_war(enemy_map.p[0], enemy_map.p[1], enemy_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_STATIC:
@@ -61,7 +58,7 @@ class AttackStrategy():
 
         enemy_local = calc_enemy_local(self.move, self.size, self.width)
 
-        vx, vy = calc_velocity(enemy_local.carte, self.last_enemy_local.carte, dt)
+        vx, vy = calc_velocity(self.last_enemy_local.carte, enemy_local.carte, dt)
 
         self.last_enemy_local = enemy_local
         self.last_time = t
@@ -71,16 +68,16 @@ class AttackStrategy():
             print("[AttackStrategy] Attack (Forced)")
             return ATK_STRATEGY_ATTACK_FORCED
 
-        elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.6):
+        elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
             print("[AttackStrategy] Attack (Static)", self.detection_info, self.last_enemy_local.polar[0])
             return ATK_STRATEGY_ATTACK_STATIC
 
-        elif (self.last_enemy_local.polar[0] > 1.5):
+        elif (self.last_enemy_local.polar[0] > 1.7):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 
-        # elif (not self.detection_info) or (vx * vx + vy * vy > 0.04):
         elif (self.detection_info == 0):
+        # elif (self.detection_info == 0) or (vx * vx + vy * vy > 0.04):
             print("[AttackStrategy] Retire (Other)", self.detection_info, vx * vx + vy * vy)
             return ATK_STRATEGY_RETIRE_OTHER
 
@@ -89,7 +86,7 @@ class AttackStrategy():
             return ATK_STRATEGY_ATTACK_DYNAMIC
 
         else:
-            print("[AttackStrategy] Continue")
+            # print("[AttackStrategy] Continue")
             return ATK_STRATEGY_CONTINUE
 
     def enemy_callback(self, data):
@@ -129,7 +126,7 @@ def calc_enemy_local(move, size, width):
 
     area = r * r * math.pi
 
-    ds = (-1.1492 * area + 1891.2) / 1000
+    ds = (-1.1492 * area + 1891.2) / 1000 - 0.1
     th = (math.pi / 2) - (math.pi / 6) * (move / width * 2)
 
     x = ds * math.cos(th)
@@ -149,7 +146,7 @@ def local_to_map(local, my_map):
 
     mx = local.carte[0] * math.cos(a) + local.carte[1] * math.sin(a) + my_map.p[0]
     my = local.carte[1] * math.cos(a) - local.carte[0] * math.sin(a) + my_map.p[1]
-    ma = my_map.a - local.polar[1]
+    ma = local.polar[1] - (math.pi / 2) + my_map.a
 
     return MapInfo(mx, my, ma)
 
