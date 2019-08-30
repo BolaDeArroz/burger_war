@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import cv2
-import math
 import numpy as np
 import rospy
 
@@ -10,7 +9,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from std_msgs.msg import Float32MultiArray
 
-from image_function import Normalization, detect_enemy_robot
+from image_function import Normalization, detect_enemy_robot_light
 
 
 class EnemyFinder():
@@ -22,26 +21,25 @@ class EnemyFinder():
         self.img_sub = rospy.Subscriber("image_raw", Image, self.image_callback)
 
     def image_callback(self, data):
-        bgr_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        iim_image = Normalization(bgr_image)
-
-        enemy = detect_enemy_robot(iim_image)
-
+        image = Normalization(self.bridge.imgmsg_to_cv2(data, "bgr8"))
+        enemy = detect_enemy_robot_light(image)
         array = Float32MultiArray()
+
+        h, w, _ = image.shape
 
         if enemy['red_ball'] != []:
             c, r = cv2.minEnclosingCircle(enemy['red_ball'][0])
 
-            array.data = [1.0, c[0] - 320, 2 * r, 640, 480]
+            array.data = [1, c[0] - (w / 2.0), 2 * r, w, h]
 
         elif enemy['green_side'] != []:
-            array.data = [-1.0, 0, 0, 640, 480]
+            array.data = [-1, 0, 0, w, h]
 
         else:
-            array.data = [0.0, 0, 0, 640, 480]
+            array.data = [0, 0, 0, w, h]
 
         self.atk_pub.publish(array)
-        self.img_pub.publish(self.bridge.cv2_to_imgmsg(bgr_image, "bgr8"))
+        # self.img_pub.publish(self.bridge.cv2_to_imgmsg(image, "bgr8"))
 
 
 if __name__ == "__main__":

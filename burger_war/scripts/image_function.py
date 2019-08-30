@@ -137,6 +137,44 @@ def detect_enemy_robot(frame):
     return result_dict
 
 
+def detect_enemy_robot_light(frame):
+    result_dict = {}
+    img = frame
+
+    # convert to HSV (Hue, Saturation, Value(Brightness))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    #cv2.imshow("Hue", hsv[:, :, 0])
+    """
+    use the bgr method at gazebo because hsv not show
+    """
+    # find red ball
+    # bgr use only gazebo
+    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    # hsv
+    #rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    #rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    #rnb_red = rnb_red1 + rnb_red2
+    # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
+    rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
+    rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
+    _, contours, _ = cv2.findContours(rnb_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    result_dict['red_ball'] = contours
+
+    # bgr
+    # rnb_green = createMaskImage(img, [0 , 10], [140, 160], [0, 10])
+    # hsv
+    rnb_green = createMaskImage(hsv, [45 ,65], [50, 255], [50, 255])
+    # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
+    rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9))) # using 9x9 ellipse kernel
+    rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4,4))) # using 4x4 ellipse kernel
+    _, contours, _ = cv2.findContours(rnb_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    result_dict['green_side'] = contours
+
+    return result_dict
+
+
 def upper_cut_image(origin_image):
     pass
 
