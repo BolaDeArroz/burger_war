@@ -102,8 +102,8 @@ class NaviBot():
         detect_green_result = None
         if self.image is not None:  
             detect_green_result = detect_enemy_robot(self.image)
-        print('GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG: ', detect_green_result, array)
-        if detect_green_result != [] and len(array.data) != 0:
+        if detect_green_result['green_side'] != [] and len(array.data) != 0:
+            #print('GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG: ', detect_green_result['green_side'], array)
             self.array.data = [1, 0, 0, 0]
             self.array.data[1]=500
             self.array.data[2]=500

@@ -40,7 +40,7 @@ class EnemyFinder():
             array.data = [0.0, 0, 0, 640, 480]
 
         self.atk_pub.publish(array)
-        self.img_pub.publish(self.bridge.cv2_to_imgmsg(bgr_image, "bgr8")
+        self.img_pub.publish(self.bridge.cv2_to_imgmsg(bgr_image, "bgr8"))
 
 
 if __name__ == "__main__":

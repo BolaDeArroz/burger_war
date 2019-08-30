@@ -143,6 +143,14 @@ class AttackBot():
                 self.client.cancel_goal()
                 self.recovery_reject()
                 break
+            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.PREEMPTING:
+                print('[ATTACK RUN] PREEMPTING')
+                self.client.cancel_goal()
+                break
+            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.LOST:
+                print('[ATTACK RUN] LOST')
+                self.client.cancel_goal()
+                break
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.SUCCEEDED:
                 print('[ATTACK RUN] SUCCEEDED')
             """
@@ -150,11 +158,13 @@ class AttackBot():
                 recover_lost()
             """
             now = rospy.Time.now()
+            """
             # change strategy by possession marker info 
             obtain_marker_list = check_possession_marker(self.war_state)
             if '_L' in obtain_marker_list and '_R' in obtain_marker_list:
                 # TODO
                 timeout_dur = 35
+            """
             # time out
             if now.secs - start_time.secs > timeout_dur:
                 print('[ATTACK RUN] Time Out!!!')
@@ -193,7 +203,7 @@ class AttackBot():
             # change navigation to tracking
             if TRACKING_MODE is False:
                 # set enemy position
-                result = self.set_goal(enemey_position_x*0.6, enemey_position_y*0.6, enemey_position_yaw)
+                result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
                 print('[ATTACK RUN] set enemy position: x = {}, y = {}, yaw = {}'.format(enemey_position_x, enemey_position_y, enemey_position_yaw))
                 print('[ATTACK RUN] set enemy position: result {}'.format(result))
                 #self.client.cancel_goal()

@@ -19,9 +19,9 @@ class AttackStrategy():
 
     def init_vars(self, move, size, width, forced, t):
         self.detection_data = True
-        self.move_data = move
-        self.size_data = size
-        self.width_data = width
+        #self.move_data = move
+        #self.size_data = size
+        #self.width_data = width
         self.forced = forced
         self.last_my_map = get_my_map(self.tf_listener, self.name)
         self.last_enemy_local = calc_enemy_local(move, size, width)
@@ -67,7 +67,7 @@ class AttackStrategy():
             print("[AttackStrategy] Attack (Forced)")
             return ATK_STRATEGY_ATTACK
 
-        elif (self.last_enemy_local.polar[0] > 2.0):
+        elif (self.last_enemy_local.polar[0] > 1.5):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 

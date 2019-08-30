@@ -274,7 +274,7 @@ def get_tracking_info(original_image):
         enemy_center = calc_enemy_center(red_ball_contours)
         enemy_area = calc_enemy_area(red_ball_contours)
         # outside of tracking area 
-        if enemy_area < 1400:
+        if enemy_area < 1100:
             """
             you can write navigation code using enemy coordinate
             """
