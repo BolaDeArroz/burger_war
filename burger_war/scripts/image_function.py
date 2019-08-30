@@ -82,11 +82,11 @@ def detect_enemy_robot(frame):
     """
     # find red ball
     # bgr use only gazebo
-    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
     # hsv
-    #rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
-    #rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
-    #rnb_red = rnb_red1 + rnb_red2
+    rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    rnb_red = rnb_red1 + rnb_red2
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
