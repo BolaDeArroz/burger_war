@@ -27,6 +27,8 @@ def bola_de_arroz_main():
                 retire_distance_count %= 20
                 if res == ATK_STRATEGY_RETIRE_DISTANCE:
                     retire_distance_count += 1
+                else:
+                    retire_distance_count = 0
             r.sleep()
     except KeyboardInterrupt:
         changed = False
