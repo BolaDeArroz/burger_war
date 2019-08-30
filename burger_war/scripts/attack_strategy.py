@@ -15,21 +15,17 @@ class AttackStrategy():
         self.name = rospy.get_param("~robot_name")
         self.rate = rospy.Rate(30)
         self.tf_listener = tf.TransformListener()
-        self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.move_callback)
+        self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.enemy_callback)
 
-    def init_vars(self, move, size, width, forced, t):
-        self.detection_data = True
-        #self.move_data = move
-        #self.size_data = size
-        #self.width_data = width
+    def init_vars(self, forced, t):
         self.forced = forced
         self.last_my_map = get_my_map(self.tf_listener, self.name)
-        self.last_enemy_local = calc_enemy_local(move, size, width)
+        self.last_enemy_local = calc_enemy_local(self.move, self.size, self.width)
         self.last_time = t
         self.detection_time = 0
 
-    def run(self, move, size, width, forced):
-        self.init_vars(move, size, width, forced, rospy.Time.now())
+    def run(self, forced):
+        self.init_vars(forced, rospy.Time.now())
 
         while not rospy.is_shutdown():
             res = self.strategy(rospy.Time.now())
@@ -39,15 +35,18 @@ class AttackStrategy():
 
             self.rate.sleep()
 
+        print("[AttackStrategy] Enemy Info", self.last_enemy_local.polar)
+        print("[AttackStrategy] MyMap Info", self.last_my_map.a)
+
         if res == ATK_STRATEGY_ATTACK_DYNAMIC:
             enemy_map = local_to_map(self.last_enemy_local, self.last_my_map)
-
+            print("[AttackStrategy] Target Info", enemy_map.p, enemy_map.a)
             AttackBot().attack_war(enemy_map.p[0], enemy_map.p[1], enemy_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_STATIC:
             AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
 
-        elif res == ATK_STRATEGY_ATTACK_FORCE:
+        elif res == ATK_STRATEGY_ATTACK_FORCED:
             AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
 
         return res
@@ -60,7 +59,7 @@ class AttackStrategy():
         if (dt < 0.001) or (self.last_my_map is None):
             return ATK_STRATEGY_CONTINUE
 
-        enemy_local = calc_enemy_local(self.move_data, self.size_data, self.width_data)
+        enemy_local = calc_enemy_local(self.move, self.size, self.width)
 
         vx, vy = calc_velocity(enemy_local.carte, self.last_enemy_local.carte, dt)
 
@@ -72,17 +71,17 @@ class AttackStrategy():
             print("[AttackStrategy] Attack (Forced)")
             return ATK_STRATEGY_ATTACK_FORCED
 
-        elif (self.detection_data < 0) or (self.last_enemy_local.polar[0] < 0.6):
-            print("[AttackStrategy] Attack (Static)", self.detection_data, self.last_enemy_local.polar[0])
+        elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.6):
+            print("[AttackStrategy] Attack (Static)", self.detection_info, self.last_enemy_local.polar[0])
             return ATK_STRATEGY_ATTACK_STATIC
 
         elif (self.last_enemy_local.polar[0] > 1.5):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 
-        #elif (not self.detection_data) or (vx * vx + vy * vy > 0.04):
-        elif (self.detection_data == 0):
-            print("[AttackStrategy] Retire (Other)", self.detection_data, vx * vx + vy * vy)
+        # elif (not self.detection_info) or (vx * vx + vy * vy > 0.04):
+        elif (self.detection_info == 0):
+            print("[AttackStrategy] Retire (Other)", self.detection_info, vx * vx + vy * vy)
             return ATK_STRATEGY_RETIRE_OTHER
 
         elif (self.detection_time > 1.0):
@@ -93,11 +92,11 @@ class AttackStrategy():
             print("[AttackStrategy] Continue")
             return ATK_STRATEGY_CONTINUE
 
-    def move_callback(self, data):
-        self.detection_data = int(data.data[0])
-        self.move_data = int(data.data[1])
-        self.size_data = int(data.data[2])
-        self.width_data = int(data.data[3])
+    def enemy_callback(self, data):
+        self.detection_info = int(data.data[0])
+        self.move = int(data.data[1])
+        self.size = int(data.data[2])
+        self.width = int(data.data[3])
 
 
 class LocalPoint():

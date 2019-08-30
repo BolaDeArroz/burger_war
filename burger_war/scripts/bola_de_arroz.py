@@ -18,11 +18,11 @@ def bola_de_arroz_main():
             # searching enemy
             if changed:
                 print('navi')
-                move_x, size, width = navi_bot.strategy()
+                navi_bot.strategy()
                 changed = False
             else:
                 print('attack')
-                res = attack_strategy.run(int(move_x), int(size), int(width), retire_distance_count >= 20)
+                res = attack_strategy.run(retire_distance_count >= 20)
                 changed = True
                 retire_distance_count %= 20
                 if res == ATK_STRATEGY_RETIRE_DISTANCE:
