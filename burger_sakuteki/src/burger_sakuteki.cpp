@@ -61,7 +61,6 @@ bool sakuteki(cv_bridge::CvImagePtr cv_msg, CvScalar searchColor)
             }
         }
     }
-
     return detection;
 }
 
@@ -92,14 +91,8 @@ void adjust_bright(cv_bridge::CvImagePtr cv_msg, double brightScale)
 
 void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 {
-  //ROS_INFO("get image");
-  /* ImageトピックをCvImage型に変換 */
-//  cv_bridge::CvImagePtr cv_origin_msg = cv_bridge::toCvCopy(msg, "bgr8");
-  cv_bridge::CvImagePtr cv_msg = cv_bridge::toCvCopy(msg, "bgr8");
+    cv_bridge::CvImagePtr cv_msg = cv_bridge::toCvCopy(msg, "bgr8");
 
-  //////////////////////////////////////////
-  // ここにイメージ処理を実装する
-  
     /*********************************************************/
     // ここからOpenCVを使用せずに赤玉の位置を特定するコード
     bool detection = false;
@@ -116,14 +109,10 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
     detection = sakuteki(cv_msg, targetColor[0]);
     array.data[0] = detection;
 
-    ROS_INFO("detection=%d", detection);
-
     if(detection == true)
     {
         int x = (xmin + xmax)/2;
         int y = (ymin + ymax)/2;
-        // デバッグ用描画(Black Circle)
-//        cv::circle(cv_msg->image, cv::Point(x, y), xmax-xmin, CV_RGB(0,0,0), -1);
 
         // 敵と正面に向き合うための幅()
         int move_x = x-(cv_msg->image.cols/2);
@@ -139,7 +128,6 @@ void imageCallback(const sensor_msgs::ImageConstPtr& msg)
 
     // ここまでOpenCVを使用せずに赤玉の位置を特定するコード
     /*********************************************************/
-  //////////////////////////////////////////
 }
 
 int main(int argc, char * argv[])
@@ -158,7 +146,6 @@ int main(int argc, char * argv[])
     sub_ = n.subscribe("/" + param + "/image_raw", 10, &imageCallback);
 
     // publishserオブジェクトの生成
-    // サンプルではImageデータをpublishする
     image_transport::ImageTransport it(n);
     pub_image_ = it.advertise("/" + param + "/out_image", 1);
 
