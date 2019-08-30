@@ -127,7 +127,7 @@ class AttackBot():
         r = rospy.Rate(30) # change speed 30fps
         # listener = tf.TransformListener()
         now = rospy.Time.now()
-        timeout_dur = 20  # default time out
+        timeout_dur = 10  # default time out
         # start time log
         start_time = now
         # detect counter
