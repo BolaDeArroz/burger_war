@@ -165,7 +165,7 @@ class NaviBot():
     def swing_behavior(self):
         print("[NAVIRUN]swing_behavior")
         #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/7,0.7)
+        self.pub_vel(0,0,-3.1415/7,1.0)
         #反時計方向に180度回転
         self.pub_vel(0,0,3.1415/7,1.4)
         #時計方向に90度回転
@@ -173,8 +173,10 @@ class NaviBot():
 
     def swing_behavior_right(self):
         print("[NAVIRUN]swing_behavior")
-        #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/3.5,1.6)
+        #時計方向に120度回転
+        self.pub_vel(0,0,-3.1415/3.5,2.0)
+        #反時計方向に30度回転
+        self.pub_vel(0,0,3.1415/3.5,0.3)
         #一時停止
         self.pub_vel(0,0,0,0.5)
         #反時計方向に90度回転
