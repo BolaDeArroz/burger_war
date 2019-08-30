@@ -99,7 +99,7 @@ class NaviBot():
 
     def enemy_detect_callback(self,array):
         print("[NAVIRUN]EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])
-        detect_green_result = None
+        detect_green_result = {}
         if self.image is not None:  
             detect_green_result = detect_enemy_robot(self.image)
         if 'green_side' in detect_green_result and detect_green_result['green_side'] != [] and len(array.data) != 0:
