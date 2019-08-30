@@ -47,7 +47,7 @@ def check_possession_marker(war_state):
     if war_state is None:
         return obtain_targets_list
     #print(dir(war_state.data))
-    #print(war_state.data)
+    #print(war_state.data) 
     json_war_state = json.loads(war_state.data)
     for key in json_war_state:
         if key == 'scores':
