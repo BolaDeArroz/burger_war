@@ -39,10 +39,16 @@ class AttackStrategy():
 
             self.rate.sleep()
 
-        if res == ATK_STRATEGY_ATTACK:
+        if res == ATK_STRATEGY_ATTACK_DYNAMIC:
             enemy_map = local_to_map(self.last_enemy_local, self.last_my_map)
 
             AttackBot().attack_war(enemy_map.p[0], enemy_map.p[1], enemy_map.a)
+
+        elif res == ATK_STRATEGY_ATTACK_STATIC:
+            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
+
+        elif res == ATK_STRATEGY_ATTACK_FORCE:
+            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
 
         return res
 
@@ -61,31 +67,34 @@ class AttackStrategy():
         self.last_enemy_local = enemy_local
         self.last_time = t
         self.detection_time += dt
-        print("[AttackStrategy]", self.last_my_map.p, self.last_enemy_local.polar)
 
         if (self.forced):
             print("[AttackStrategy] Attack (Forced)")
-            return ATK_STRATEGY_ATTACK
+            return ATK_STRATEGY_ATTACK_FORCED
+
+        elif (self.detection_data < 0) or (self.last_enemy_local.polar[0] < 0.6):
+            print("[AttackStrategy] Attack (Static)", self.detection_data, self.last_enemy_local.polar[0])
+            return ATK_STRATEGY_ATTACK_STATIC
 
         elif (self.last_enemy_local.polar[0] > 1.5):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 
         #elif (not self.detection_data) or (vx * vx + vy * vy > 0.04):
-        elif (not self.detection_data):
+        elif (self.detection_data == 0):
             print("[AttackStrategy] Retire (Other)", self.detection_data, vx * vx + vy * vy)
             return ATK_STRATEGY_RETIRE_OTHER
 
-        elif (self.detection_time > 1.0) or (self.last_enemy_local.polar[0] < 0.6):
-            print("[AttackStrategy] Attack", self.detection_time, self.last_enemy_local.polar[0])
-            return ATK_STRATEGY_ATTACK
+        elif (self.detection_time > 1.0):
+            print("[AttackStrategy] Attack (Dynamic)", self.detection_time)
+            return ATK_STRATEGY_ATTACK_DYNAMIC
 
         else:
             print("[AttackStrategy] Continue")
             return ATK_STRATEGY_CONTINUE
 
     def move_callback(self, data):
-        self.detection_data = int(data.data[0]) != 0
+        self.detection_data = int(data.data[0])
         self.move_data = int(data.data[1])
         self.size_data = int(data.data[2])
         self.width_data = int(data.data[3])
@@ -147,6 +156,8 @@ def local_to_map(local, my_map):
 
 
 ATK_STRATEGY_CONTINUE = 0x00
-ATK_STRATEGY_ATTACK = 0x01
-ATK_STRATEGY_RETIRE_DISTANCE = 0x02
-ATK_STRATEGY_RETIRE_OTHER = 0x03
+ATK_STRATEGY_ATTACK_FORCED = 0x01
+ATK_STRATEGY_ATTACK_DYNAMIC = 0x02
+ATK_STRATEGY_ATTACK_STATIC = 0x03
+ATK_STRATEGY_RETIRE_DISTANCE = 0x04
+ATK_STRATEGY_RETIRE_OTHER = 0x05

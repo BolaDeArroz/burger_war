@@ -27,14 +27,15 @@ class EnemyFinder():
 
         enemy = detect_enemy_robot(iim_image)
 
-        red_ball_contours = enemy['red_ball']
-
         array = Float32MultiArray()
 
-        if red_ball_contours != []:
-            c, r = cv2.minEnclosingCircle(red_ball_contours[0])
+        if enemy['red_ball'] != []:
+            c, r = cv2.minEnclosingCircle(enemy['red_ball'][0])
 
             array.data = [1.0, c[0] - 320, 2 * r, 640, 480]
+
+        elif enemy['green_side'] != []:
+            array.data = [-1.0, 0, 0, 640, 480]
 
         else:
             array.data = [0.0, 0, 0, 640, 480]
