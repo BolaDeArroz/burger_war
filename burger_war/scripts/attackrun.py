@@ -132,8 +132,11 @@ class AttackBot():
         start_time = now
         # detect counter
         detect_count = 0
-        #listener.waitForTransform('/' + self.name +"/map",self.name +"/base_link", rospy.Time(),rospy.Duration(4.0))   
+        #listener.waitForTransform('/' + self.name +"/map",self.name +"/base_link", rospy.Time(),rospy.Duration(4.0))
+        print('[ATTACK RUN] First set enemy position: x = {}, y = {}, yaw = {}'.format(enemey_position_x, enemey_position_y, enemey_position_yaw))
+        result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
         while not rospy.is_shutdown():
+            print('[ATTACK RUN] TRACKING_MODE: ', TRACKING_MODE, 'time', now.secs - start_time.secs)
             # failed move_base
             if self.client.get_state() == actionlib_msgs.msg.GoalStatus.ABORTED:
                 print('[ATTACK RUN] ABORTED')
@@ -145,14 +148,15 @@ class AttackBot():
                 break
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.PREEMPTING:
                 print('[ATTACK RUN] PREEMPTING')
-                self.client.cancel_goal()
-                break
-            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.LOST:
-                print('[ATTACK RUN] LOST')
-                self.client.cancel_goal()
-                break
+                #self.client.cancel_goal()
+                #break
             elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.SUCCEEDED:
                 print('[ATTACK RUN] SUCCEEDED')
+            elif self.client.get_state() == actionlib_msgs.msg.GoalStatus.LOST:
+                print('[ATTACK RUN] LOST')
+                #self.client.cancel_goal()
+                #break
+            
             """
             elif self.get_state == actionlib_msgs.msg.GoalStatus.LOST:
                 recover_lost()
@@ -171,6 +175,7 @@ class AttackBot():
                 self.client.cancel_goal()
                 break
             if self.image is None:
+                print('[ATTACK RUN] None image')
                 continue
             # change strategy by tracking info 
             tracking_info = get_tracking_info(self.image)
