@@ -18,7 +18,7 @@ class EnemyFinder():
         self.bridge = CvBridge()
 
         self.img_pub = rospy.Publisher("enemy_finder", Image, queue_size=1)
-        self.atk_pub = rospy.Publisher("array", Float32MultiArray, queue_size=1)
+        self.atk_pub = rospy.Publisher("array_ex", Float32MultiArray, queue_size=1)
         self.img_sub = rospy.Subscriber("image_raw", Image, self.image_callback)
 
     def image_callback(self, data):

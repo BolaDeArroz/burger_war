@@ -15,7 +15,7 @@ class AttackStrategy():
         self.name = rospy.get_param("~robot_name")
         self.rate = rospy.Rate(30)
         self.tf_listener = tf.TransformListener()
-        self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.enemy_callback)
+        self.mov_sub = rospy.Subscriber("array_ex", Float32MultiArray, self.enemy_callback)
 
     def init_vars(self, forced, t):
         self.forced = forced
@@ -44,10 +44,10 @@ class AttackStrategy():
             AttackBot().attack_war(enemy_map.p[0], enemy_map.p[1], enemy_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_STATIC:
-            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
+            AttackBot().attack_war(self.last_my_map.p[0], self.last_my_map.p[1], self.last_my_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_FORCED:
-            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
+            AttackBot().attack_war(self.last_my_map.p[0], self.last_my_map.p[1], self.last_my_map.a)
 
         return res
 
@@ -94,8 +94,8 @@ class AttackStrategy():
 
     def enemy_callback(self, data):
         self.detection_info = int(data.data[0])
-        self.move = int(data.data[1])
-        self.size = int(data.data[2])
+        self.move = data.data[1]
+        self.size = data.data[2]
         self.width = int(data.data[3])
 
 
@@ -125,12 +125,12 @@ def get_my_map(tf_listener, bot_name):
 
 
 def calc_enemy_local(move, size, width):
-    r = float(size) / 2
+    r = size / 2
 
     area = r * r * math.pi
 
     ds = (-1.1492 * area + 1891.2) / 1000
-    th = (math.pi / 2) - (math.pi / 6) * (float(move) / width * 2)
+    th = (math.pi / 2) - (math.pi / 6) * (move / width * 2)
 
     x = ds * math.cos(th)
     y = ds * math.sin(th)
