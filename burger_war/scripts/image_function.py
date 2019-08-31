@@ -110,6 +110,7 @@ def detect_enemy_robot(frame):
     draw_obj_label(contours, "green", img, "green")
     result_dict['green_side'] = contours
     
+    """
     # burger
     # rgb
     img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
@@ -134,6 +135,7 @@ def detect_enemy_robot(frame):
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "almond", img, "almond")
     result_dict['burger'] = contours
+    """
     return result_dict
 
 
