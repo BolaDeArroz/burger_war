@@ -185,12 +185,15 @@ class NaviBot():
     def calc_nearest_waypoint_idx(self,position,waypoints):
         nearest_waypoint_idx=0
         nearest_distance = 10
-        nearest_minimam=0.2
         for (idx_waypoint,waypoint) in enumerate(waypoints):
             tmp_distance=math.sqrt((position[0]-waypoint[0])**2 + (position[1]-waypoint[1])**2 )
-            if tmp_distance <nearest_distance and tmp_distance > nearest_minimam:
+            if tmp_distance <nearest_distance:
                 nearest_distance=tmp_distance
                 nearest_waypoint_idx=idx_waypoint
+        print("nearest_waypoint_idx1=",nearest_waypoint_idx)
+        if nearest_waypoint_idx+1 >= len(waypoints):nearest_waypoint_idx=0
+        else:nearest_waypoint_idx=nearest_waypoint_idx+1
+        print("nearest_waypoint_idx2=",nearest_waypoint_idx)
         return nearest_waypoint_idx
 
     def go_waypoint(self,waypoint,is_passing=False):
