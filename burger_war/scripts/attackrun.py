@@ -132,6 +132,7 @@ class AttackBot():
         start_time = now
         # detect counter
         detect_count = 0
+        red_ball_count = 0
         #listener.waitForTransform('/' + self.name +"/map",self.name +"/base_link", rospy.Time(),rospy.Duration(4.0))
         print('[ATTACK RUN] First set enemy position: x = {}, y = {}, yaw = {}'.format(enemey_position_x, enemey_position_y, enemey_position_yaw))
         result = self.set_goal(enemey_position_x, enemey_position_y, enemey_position_yaw)
@@ -181,6 +182,7 @@ class AttackBot():
             tracking_info = get_tracking_info(self.image)
             print(tracking_info)
             # deciede to navigation or tracking
+            
             if tracking_info != {}:
                 print('[ATTACK RUN] Find enemy')
                 # continue navigation
@@ -188,7 +190,10 @@ class AttackBot():
                     # on the test what go straight
                     #twist = rotation_operate(3)
                     #self.vel_pub.publish(twist)
-                    pass
+                    red_ball_count = red_ball_count + 1
+                    if red_ball_count > 60:
+                        print('[ATTACK RUN] Find enemy')
+                        break
                 elif tracking_info['target'] == 'green_side' or tracking_info['target'] == 'burger':
                     if TRACKING_MODE == False:
                         self.client.cancel_goal()

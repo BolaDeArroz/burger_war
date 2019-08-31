@@ -64,15 +64,18 @@ class AttackStrategy():
         self.last_time = t
         self.detection_time += dt
 
+        """
         if (self.forced):
             print("[AttackStrategy] Attack (Forced)")
             return ATK_STRATEGY_ATTACK_FORCED
+        """
 
-        elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
+        if (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
+        # elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
             print("[AttackStrategy] Attack (Static)", self.detection_info, self.last_enemy_local.polar[0])
             return ATK_STRATEGY_ATTACK_STATIC
 
-        elif (self.last_enemy_local.polar[0] > 1.7):
+        elif (self.last_enemy_local.polar[0] > 1.1):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 

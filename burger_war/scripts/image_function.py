@@ -82,11 +82,11 @@ def detect_enemy_robot(frame):
     """
     # find red ball
     # bgr use only gazebo
-    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
     # hsv
-    rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
-    rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
-    rnb_red = rnb_red1 + rnb_red2
+    #rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    #rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    #rnb_red = rnb_red1 + rnb_red2
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
@@ -151,11 +151,11 @@ def detect_enemy_robot_light(frame):
     """
     # find red ball
     # bgr use only gazebo
-    #rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
     # hsv
-    rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
-    rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
-    rnb_red = rnb_red1 + rnb_red2
+    #rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    #rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    #rnb_red = rnb_red1 + rnb_red2
     # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
     rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
@@ -313,7 +313,7 @@ def get_tracking_info(original_image):
         enemy_center = calc_enemy_center(red_ball_contours)
         enemy_area = calc_enemy_area(red_ball_contours)
         # outside of tracking area 
-        if enemy_area < 1200:
+        if enemy_area < 1400:
             """
             you can write navigation code using enemy coordinate
             """
