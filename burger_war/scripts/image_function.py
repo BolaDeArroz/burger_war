@@ -110,6 +110,7 @@ def detect_enemy_robot(frame):
     draw_obj_label(contours, "green", img, "green")
     result_dict['green_side'] = contours
     
+    """
     # burger
     # rgb
     img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
@@ -134,6 +135,7 @@ def detect_enemy_robot(frame):
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "almond", img, "almond")
     result_dict['burger'] = contours
+    """
     return result_dict
 
 
@@ -306,7 +308,7 @@ def get_tracking_info(original_image):
     cv2.waitKey(1)
     red_ball_contours = enemy_robot_contours['red_ball']
     green_side_contours = enemy_robot_contours['green_side']
-    burger_contours = enemy_robot_contours['burger']
+    # burger_contours = enemy_robot_contours['burger']
     if red_ball_contours != []:
         enemy_center = calc_enemy_center(red_ball_contours)
         enemy_area = calc_enemy_area(red_ball_contours)
@@ -326,6 +328,7 @@ def get_tracking_info(original_image):
         result_dict['enemy_area'] = enemy_area
         result_dict['target'] = 'green_side'
         return result_dict
+    """
     elif burger_contours != []:
         enemy_center = calc_enemy_center(burger_contours)
         enemy_area = calc_enemy_area(burger_contours)
@@ -333,4 +336,5 @@ def get_tracking_info(original_image):
         result_dict['enemy_area'] = enemy_area
         result_dict['target'] = 'burger'
         return result_dict
+    """
     return result_dict
