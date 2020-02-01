@@ -99,10 +99,10 @@ class NaviBot():
 
     def enemy_detect_callback(self,array):
         print("[NAVIRUN]EnemyDetect", array.data[0], self.is_enemy_detected, "red size", array.data[2])
-        detect_green_result = None
+        detect_green_result = {}
         if self.image is not None:  
             detect_green_result = detect_enemy_robot(self.image)
-        if detect_green_result['green_side'] != [] and len(array.data) != 0:
+        if 'green_side' in detect_green_result and detect_green_result['green_side'] != [] and len(array.data) != 0:
             #print('GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG: ', detect_green_result['green_side'], array)
             self.array.data = [1, 0, 0, 0]
             self.array.data[1]=500
@@ -165,7 +165,7 @@ class NaviBot():
     def swing_behavior(self):
         print("[NAVIRUN]swing_behavior")
         #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/7,0.7)
+        self.pub_vel(0,0,-3.1415/7,1.0)
         #反時計方向に180度回転
         self.pub_vel(0,0,3.1415/7,1.4)
         #時計方向に90度回転
@@ -173,8 +173,10 @@ class NaviBot():
 
     def swing_behavior_right(self):
         print("[NAVIRUN]swing_behavior")
-        #時計方向に90度回転
-        self.pub_vel(0,0,-3.1415/3.5,1.6)
+        #時計方向に120度回転
+        self.pub_vel(0,0,-3.1415/3.5,2.0)
+        #反時計方向に30度回転
+        self.pub_vel(0,0,3.1415/3.5,0.3)
         #一時停止
         self.pub_vel(0,0,0,0.5)
         #反時計方向に90度回転
@@ -188,6 +190,10 @@ class NaviBot():
             if tmp_distance <nearest_distance:
                 nearest_distance=tmp_distance
                 nearest_waypoint_idx=idx_waypoint
+        print("nearest_waypoint_idx1=",nearest_waypoint_idx)
+        if nearest_waypoint_idx+1 >= len(waypoints):nearest_waypoint_idx=0
+        else:nearest_waypoint_idx=nearest_waypoint_idx+1
+        print("nearest_waypoint_idx2=",nearest_waypoint_idx)
         return nearest_waypoint_idx
 
     def go_waypoint(self,waypoint,is_passing=False):

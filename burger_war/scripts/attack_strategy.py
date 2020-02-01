@@ -15,7 +15,7 @@ class AttackStrategy():
         self.name = rospy.get_param("~robot_name")
         self.rate = rospy.Rate(30)
         self.tf_listener = tf.TransformListener()
-        self.mov_sub = rospy.Subscriber("array", Float32MultiArray, self.enemy_callback)
+        self.mov_sub = rospy.Subscriber("array_ex", Float32MultiArray, self.enemy_callback)
 
     def init_vars(self, forced, t):
         self.forced = forced
@@ -35,19 +35,16 @@ class AttackStrategy():
 
             self.rate.sleep()
 
-        print("[AttackStrategy] Enemy Info", self.last_enemy_local.polar)
-        print("[AttackStrategy] MyMap Info", self.last_my_map.a)
-
         if res == ATK_STRATEGY_ATTACK_DYNAMIC:
             enemy_map = local_to_map(self.last_enemy_local, self.last_my_map)
-            print("[AttackStrategy] Target Info", enemy_map.p, enemy_map.a)
+
             AttackBot().attack_war(enemy_map.p[0], enemy_map.p[1], enemy_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_STATIC:
-            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
+            AttackBot().attack_war(self.last_my_map.p[0], self.last_my_map.p[1], self.last_my_map.a)
 
         elif res == ATK_STRATEGY_ATTACK_FORCED:
-            AttackBot().attack_war(self.my_map.p[0], self.my_map.p[1], self.my_map.a)
+            AttackBot().attack_war(self.last_my_map.p[0], self.last_my_map.p[1], self.last_my_map.a)
 
         return res
 
@@ -61,26 +58,29 @@ class AttackStrategy():
 
         enemy_local = calc_enemy_local(self.move, self.size, self.width)
 
-        vx, vy = calc_velocity(enemy_local.carte, self.last_enemy_local.carte, dt)
+        vx, vy = calc_velocity(self.last_enemy_local.carte, enemy_local.carte, dt)
 
         self.last_enemy_local = enemy_local
         self.last_time = t
         self.detection_time += dt
 
+        """
         if (self.forced):
             print("[AttackStrategy] Attack (Forced)")
             return ATK_STRATEGY_ATTACK_FORCED
+        """
 
-        elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.6):
+        if (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
+        # elif (self.detection_info < 0) or (self.last_enemy_local.polar[0] < 0.7):
             print("[AttackStrategy] Attack (Static)", self.detection_info, self.last_enemy_local.polar[0])
             return ATK_STRATEGY_ATTACK_STATIC
 
-        elif (self.last_enemy_local.polar[0] > 1.5):
+        elif (self.last_enemy_local.polar[0] > 1.1):
             print("[AttackStrategy] Retire (Distance)", self.last_enemy_local.polar[0])
             return ATK_STRATEGY_RETIRE_DISTANCE
 
-        # elif (not self.detection_info) or (vx * vx + vy * vy > 0.04):
         elif (self.detection_info == 0):
+        # elif (self.detection_info == 0) or (vx * vx + vy * vy > 0.04):
             print("[AttackStrategy] Retire (Other)", self.detection_info, vx * vx + vy * vy)
             return ATK_STRATEGY_RETIRE_OTHER
 
@@ -89,13 +89,13 @@ class AttackStrategy():
             return ATK_STRATEGY_ATTACK_DYNAMIC
 
         else:
-            print("[AttackStrategy] Continue")
+            # print("[AttackStrategy] Continue")
             return ATK_STRATEGY_CONTINUE
 
     def enemy_callback(self, data):
         self.detection_info = int(data.data[0])
-        self.move = int(data.data[1])
-        self.size = int(data.data[2])
+        self.move = data.data[1]
+        self.size = data.data[2]
         self.width = int(data.data[3])
 
 
@@ -125,12 +125,12 @@ def get_my_map(tf_listener, bot_name):
 
 
 def calc_enemy_local(move, size, width):
-    r = float(size) / 2
+    r = size / 2
 
     area = r * r * math.pi
 
-    ds = (-1.1492 * area + 1891.2) / 1000
-    th = (math.pi / 2) - (math.pi / 6) * (float(move) / width * 2)
+    ds = (-1.1492 * area + 1891.2) / 1000 - 0.1
+    th = (math.pi / 2) - (math.pi / 6) * (move / width * 2)
 
     x = ds * math.cos(th)
     y = ds * math.sin(th)
@@ -149,7 +149,7 @@ def local_to_map(local, my_map):
 
     mx = local.carte[0] * math.cos(a) + local.carte[1] * math.sin(a) + my_map.p[0]
     my = local.carte[1] * math.cos(a) - local.carte[0] * math.sin(a) + my_map.p[1]
-    ma = my_map.a - local.polar[1]
+    ma = local.polar[1] - (math.pi / 2) + my_map.a
 
     return MapInfo(mx, my, ma)
 

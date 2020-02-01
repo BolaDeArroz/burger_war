@@ -109,7 +109,8 @@ def detect_enemy_robot(frame):
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "green", img, "green")
     result_dict['green_side'] = contours
-
+    
+    """
     # burger
     # rgb
     img_gblur = cv2.GaussianBlur(hsv, (105, 105), 5)
@@ -134,6 +135,45 @@ def detect_enemy_robot(frame):
     Draw_txt(im, contours, hierarchy,img)
     draw_obj_label(contours, "almond", img, "almond")
     result_dict['burger'] = contours
+    """
+    return result_dict
+
+
+def detect_enemy_robot_light(frame):
+    result_dict = {}
+    img = frame
+
+    # convert to HSV (Hue, Saturation, Value(Brightness))
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    #cv2.imshow("Hue", hsv[:, :, 0])
+    """
+    use the bgr method at gazebo because hsv not show
+    """
+    # find red ball
+    # bgr use only gazebo
+    rnb_red = createMaskImage(img, [0 , 10], [0, 10], [100, 255])
+    # hsv
+    #rnb_red1 = createMaskImage(hsv, [165 , 180], [120, 240], [120, 240])
+    #rnb_red2 = createMaskImage(hsv, [0 , 5], [120, 240], [120, 240])
+    #rnb_red = rnb_red1 + rnb_red2
+    # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
+    rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(5,5)))
+    rnb_red = cv2.morphologyEx(rnb_red, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9)))
+    _, contours, _ = cv2.findContours(rnb_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    result_dict['red_ball'] = contours
+
+    # bgr
+    # rnb_green = createMaskImage(img, [0 , 10], [140, 160], [0, 10])
+    # hsv
+    rnb_green = createMaskImage(hsv, [45 ,65], [50, 255], [50, 255])
+    # METHOD1: fill hole in the object using Closing process (Dilation next to Erosion) of mathematical morphology
+    rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(9,9))) # using 9x9 ellipse kernel
+    rnb_green = cv2.morphologyEx(rnb_green, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(4,4))) # using 4x4 ellipse kernel
+    _, contours, _ = cv2.findContours(rnb_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    result_dict['green_side'] = contours
+
     return result_dict
 
 
@@ -175,7 +215,7 @@ def Draw_txt(im, contours, hierarchy,img):
             cv2.putText(img, "Another Object", (posx, posy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255))
         else: # -- is not "Skal"
             cv2.rectangle(img, (posx, posy), (posx + width, posy + height), (0, 255, 0), 2)
-            cv2.imshow("Image", img)
+            #cv2.imshow("Image", img)
 
 
 
@@ -214,7 +254,7 @@ def draw_obj_label(contours,label_data, target_img, color):
             aspect_ratio = width / height
             mesg_list.append(int(100*aspect_ratio))  ### aspect ratio
             # 0.6 is text size
-            draw_text_red(posx,posy,0.6,mesg_list,target_img)
+            draw_text_color(posx, posy, 0.6, mesg_list, target_img, color)
         else:
             cv2.rectangle(target_img, (posx, posy), (posx + width, posy + height), (b, g, r), 2)
             mesg_list = []
@@ -266,15 +306,14 @@ def get_tracking_info(original_image):
     enemy_robot_contours = detect_enemy_robot(IIM_img)
     #cv2.imshow("Image", IIM_img)
     cv2.waitKey(1)
-
     red_ball_contours = enemy_robot_contours['red_ball']
     green_side_contours = enemy_robot_contours['green_side']
-    burger_contours = enemy_robot_contours['burger']
+    # burger_contours = enemy_robot_contours['burger']
     if red_ball_contours != []:
         enemy_center = calc_enemy_center(red_ball_contours)
         enemy_area = calc_enemy_area(red_ball_contours)
         # outside of tracking area 
-        if enemy_area < 1100:
+        if enemy_area < 1400:
             """
             you can write navigation code using enemy coordinate
             """
@@ -289,6 +328,7 @@ def get_tracking_info(original_image):
         result_dict['enemy_area'] = enemy_area
         result_dict['target'] = 'green_side'
         return result_dict
+    """
     elif burger_contours != []:
         enemy_center = calc_enemy_center(burger_contours)
         enemy_area = calc_enemy_area(burger_contours)
@@ -296,4 +336,5 @@ def get_tracking_info(original_image):
         result_dict['enemy_area'] = enemy_area
         result_dict['target'] = 'burger'
         return result_dict
+    """
     return result_dict
