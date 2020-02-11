@@ -16,13 +16,12 @@ class EnemyPosFromScore:
         self.__pub = rospy.Publisher(
                 NODE_NAME, Float32MultiArray, queue_size=1)
 
-        self.__sub_ws = rospy.Subscriber(
-                topic_ws, String, self.__ws_callback, queue_size=1)
-
         self.__old = {}
         self.__new = {}
 
         self.__points = INIT_POINTS[self.__side]
+
+        rospy.Subscriber(topic_ws, String, self.__ws_callback, queue_size=1)
 
     def execute(self):
         rate = int(rospy.get_param("~rate"))
