@@ -17,8 +17,8 @@
     </node>
     <node pkg="burger_war" type="enemy_pos_from_score.py" name="enemy_pos_from_score" output="screen">
         <param name="topic_ws" value="war_state" />
-        <param name="topic_tm" value="rem_time" />
         <param name="side" value="$(arg side)" />
+        <param name="rate" value="1" />
     </node>
 
     <!-- END my program node -->

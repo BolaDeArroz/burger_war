@@ -4,13 +4,12 @@
 import json
 import rospy
 
-from std_msgs.msg import Float32MultiArray, String, Time
+from std_msgs.msg import Float32MultiArray, String
 
 
 class EnemyPosFromScore:
     def __init__(self):
         topic_ws = str(rospy.get_param("~topic_ws"))
-        topic_tm = str(rospy.get_param("~topic_tm"))
 
         self.__side = str(rospy.get_param("~side"))
 
@@ -20,18 +19,22 @@ class EnemyPosFromScore:
         self.__sub_ws = rospy.Subscriber(
                 topic_ws, String, self.__ws_callback, queue_size=1)
 
-        self.__sub_tm = rospy.Subscriber(
-                topic_tm, Time, self.__tm_callback, queue_size=1)
-
         self.__old = {}
         self.__new = {}
 
         self.__points = INIT_POINTS[self.__side]
 
-    def __ws_callback(self, data):
-        self.__new = json_to_targets(json.loads(data.data))
+    def execute(self):
+        rate = int(rospy.get_param("~rate"))
 
-    def __tm_callback(self, data):
+        r = rospy.Rate(rate)
+
+        while not rospy.is_shutdown():
+            self.__publish()
+
+            r.sleep()
+
+    def __publish(self):
         msg = Float32MultiArray()
 
         msg.data, self.__points = calc_posmap(
@@ -40,6 +43,9 @@ class EnemyPosFromScore:
         self.__old = self.__new
 
         self.__pub.publish(msg)
+
+    def __ws_callback(self, data):
+        self.__new = json_to_targets(json.loads(data.data))
 
 
 def json_to_targets(json_data):
@@ -207,4 +213,4 @@ if __name__ == "__main__":
 
     node = EnemyPosFromScore()
 
-    rospy.spin()
+    node.execute()
