@@ -9,7 +9,7 @@ import smach_ros
 from std_msgs.msg import Bool
 
 
-class bevavior_XXX(smach.State):
+class bevavior_attack(smach.State):
     def __init__(self):
 
         smach.State.__init__(self, outcomes=['outcome'])
@@ -28,13 +28,26 @@ class bevavior_XXX(smach.State):
         # ってな感じで、遷移先が複数あるならtransitionsをどんどん追加していく
         with sm_sub:
             # 最初にaddしたステートが開始時のステート
-            smach.StateMachine.add('State_A', State_A(), transitions={
-                'outcome1': 'State_B', 'outcome2': 'outcome'})  # ←sm_sub自体の終了
-            smach.StateMachine.add('State_B', State_B(), transitions={
-                'outcome1': 'State_A', 'outcome2': 'outcome'})  # ←sm_sub自体の終了
+            smach.StateMachine.add('Selecting', Selecting(), transitions={
+                'path_finding': 'PathFinding',
+                'end': 'outcome'  # ←sm_sub自体の終了
+            })
+            smach.StateMachine.add('PathFinding', PathFinding(), transitions={
+                'selecting': 'Selecting',
+                'end': 'outcome'  # ←sm_sub自体の終了
+            })
+            smach.StateMachine.add('Moving', Moving(), transitions={
+                'reading': 'Reading',
+                'end': 'outcome'  # ←sm_sub自体の終了
+            })
+            smach.StateMachine.add('Reading', Reading(), transitions={
+                'selecting': 'Selecting',
+                'end': 'outcome'  # ←sm_sub自体の終了
+            })
 
         # 下2行はsmach_viewerでステートを確認するために必要
-        sis = smach_ros.IntrospectionServer('server_name', sm_sub, '/SM_XXX')
+        sis = smach_ros.IntrospectionServer(
+                'server_name', sm_sub, '/SM_ATTACK')
         sis.start()
 
         # 内部のステートマシンの実行
@@ -43,11 +56,11 @@ class bevavior_XXX(smach.State):
         return 'outcome'
 
 
-class State_A(smach.State):
+class Selecting(smach.State):
 
     def __init__(self):
         # このステートの返り値リストを定義。
-        smach.State.__init__(self, outcomes=['outcome1', 'outcome2'])
+        smach.State.__init__(self, outcomes=['path_finding', 'end'])
 
         # 停止トピックを受け取るための定義。
         robot_name = rospy.get_param('~robot_name')
@@ -64,18 +77,18 @@ class State_A(smach.State):
         if self.is_stop_receive:
             self.is_stop_receive = False
             # 受け取っていたら終了。(終了処理とかもここに)
-            return 'outcome2'
+            return 'end'
 
-        return 'outcome1'
+        return 'end'
 
     def stop_callback(self, data):
         self.is_stop_receive = True
 
 
-class State_B(smach.State):
+class PathFinding(smach.State):
 
     def __init__(self):
-        smach.State.__init__(self, outcomes=['outcome1', 'outcome2'])
+        smach.State.__init__(self, outcomes=['selecting', 'end'])
 
         # 停止トピックを受け取るための定義。
         robot_name = rospy.get_param('~robot_name')
@@ -92,9 +105,67 @@ class State_B(smach.State):
         if self.is_stop_receive:
             self.is_stop_receive = False
             # 受け取っていたら終了。(終了処理とかもここに)
-            return 'outcome2'
+            return 'end'
 
-        return 'outcome1'
+        return 'end'
+
+    def stop_callback(self, data):
+        self.is_stop_receive = True
+
+
+class Moving(smach.State):
+
+    def __init__(self):
+        # このステートの返り値リストを定義。
+        smach.State.__init__(self, outcomes=['reading', 'end'])
+
+        # 停止トピックを受け取るための定義。
+        robot_name = rospy.get_param('~robot_name')
+        self.name = robot_name
+        self.stop_sub = rospy.Subscriber(
+                '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
+        self.is_stop_receive = False
+
+    def execute(self, userdata):
+        # ステート1の処理
+        rospy.sleep(3)
+
+        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
+        if self.is_stop_receive:
+            self.is_stop_receive = False
+            # 受け取っていたら終了。(終了処理とかもここに)
+            return 'end'
+
+        return 'end'
+
+    def stop_callback(self, data):
+        self.is_stop_receive = True
+
+
+class Reading(smach.State):
+
+    def __init__(self):
+        # このステートの返り値リストを定義。
+        smach.State.__init__(self, outcomes=['selecting', 'end'])
+
+        # 停止トピックを受け取るための定義。
+        robot_name = rospy.get_param('~robot_name')
+        self.name = robot_name
+        self.stop_sub = rospy.Subscriber(
+                '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
+        self.is_stop_receive = False
+
+    def execute(self, userdata):
+        # ステート1の処理
+        rospy.sleep(3)
+
+        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
+        if self.is_stop_receive:
+            self.is_stop_receive = False
+            # 受け取っていたら終了。(終了処理とかもここに)
+            return 'end'
+
+        return 'end'
 
     def stop_callback(self, data):
         self.is_stop_receive = True

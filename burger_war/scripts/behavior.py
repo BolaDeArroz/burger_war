@@ -7,6 +7,7 @@ import rospy
 import smach
 import smach_ros
 import behavior_XXX
+import behavior_attack
 
 
 class behavior:
@@ -31,7 +32,7 @@ class behavior:
                         'outcome': 'Strategy'})
             # 点数を取りに行く動作
             smach.StateMachine.add(
-                    'Attack', behavior_XXX.bevavior_XXX(), transitions={
+                    'Attack', behavior_attack.bevavior_attack(), transitions={
                         'outcome': 'Strategy'})
             # 妨害する動作
             smach.StateMachine.add(
