@@ -19,8 +19,7 @@ class behavior:
         with sm_top:
             # 次の動作を決定する動作
             smach.StateMachine.add(
-                    'Strategy', behavior_strategy(),
-                    transitions={
+                    'Strategy', behavior_strategy(), transitions={
                         'escape': 'Escape',
                         'attack': 'Attack',
                         'disturb': 'Disturb',
@@ -28,16 +27,16 @@ class behavior:
                     })
             # 逃げる動作
             smach.StateMachine.add(
-                    'Escape', behavior_XXX.bevavior_XXX(),
-                    transitions={'outcome': 'Strategy'})
+                    'Escape', behavior_XXX.bevavior_XXX(), transitions={
+                        'outcome': 'Strategy'})
             # 点数を取りに行く動作
             smach.StateMachine.add(
-                    'Attack', behavior_XXX.bevavior_XXX(),
-                    transitions={'outcome': 'Strategy'})
+                    'Attack', behavior_XXX.bevavior_XXX(), transitions={
+                        'outcome': 'Strategy'})
             # 妨害する動作
             smach.StateMachine.add(
-                    'Disturb', behavior_XXX.bevavior_XXX(),
-                    transitions={'outcome': 'Strategy'})
+                    'Disturb', behavior_XXX.bevavior_XXX(), transitions={
+                        'outcome': 'Strategy'})
 
         # Create and start the introspection server
         sis = smach_ros.IntrospectionServer('server_name', sm_top, '/SM_ROOT')
