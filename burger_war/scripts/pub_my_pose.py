@@ -32,11 +32,12 @@ class pub_my_pose:
             my_pos, my_ori = self.tf_listener.lookupTransform(self.name +"/map", self.name +"/base_link",rospy.Time())
             #姿勢(my_ori)がQuaternion形式なのでEuler形式(my_eul)に変換する
             my_eul=tf.transformations.euler_from_quaternion(my_ori)
-            #xが横軸、yが縦軸になるように並び替える。
-            #xはロボットスタート向きから、  右方向が+
-            #yはロボットスタート向きから、正面方向が+
-            #zは0
-            #orientationは取得したそのまま。
+            #my_posはxが横軸、yが縦軸になるように並び替える。
+            #       xはロボットスタート向きから、  右方向が+
+            #       yはロボットスタート向きから、正面方向が+
+            #       zは0
+            #my_oriは取得したそのまま。
+            #my_eulは  右方向が0,上がπ/2,左がπ, (or -π)下が-π/2になるように調整  
             my_theta=my_eul[2]+math.pi/2 if my_eul[2]+math.pi/2 < math.pi else my_eul[2]-math.pi*3/2
             my_pose=MyPose(pos           =Point(     -my_pos[1], my_pos[0],         0          ),\
                            ori_quaternion=Quaternion( my_ori[0], my_ori[1], my_ori[2],my_ori[3]),\
@@ -48,7 +49,7 @@ class pub_my_pose:
 def main(args):
     rospy.init_node('my_pose', anonymous=True)
     ra = pub_my_pose()
-    print('[rader_find_enemy]initialized')
+    print('[pub_my_pose]initialized')
     ra.run()
 
 if __name__=='__main__':
