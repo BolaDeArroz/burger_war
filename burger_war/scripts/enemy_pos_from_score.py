@@ -63,7 +63,8 @@ def calc_posmap(side, points, old, new):
 
     posmap = points_to_posmap(points)
 
-    print(posmap.index(max(posmap)), max(posmap))
+    print("[enemy_pos_from_score] {} {}".format(
+        posmap.index(max(posmap)), max(posmap)))
 
     return posmap, points
 
