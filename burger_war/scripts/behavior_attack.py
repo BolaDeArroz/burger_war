@@ -56,11 +56,11 @@ class bevavior_attack(smach.State):
         return 'outcome'
 
 
-class Selecting(smach.State):
+class SubBehaviorBase(smach.State):
 
-    def __init__(self):
+    def __init__(self, outcomes):
         # このステートの返り値リストを定義。
-        smach.State.__init__(self, outcomes=['path_finding', 'end'])
+        smach.State.__init__(self, outcomes=outcomes)
 
         # 停止トピックを受け取るための定義。
         robot_name = rospy.get_param('~robot_name')
@@ -69,33 +69,14 @@ class Selecting(smach.State):
                 '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
         self.is_stop_receive = False
 
-    def execute(self, userdata):
-        # ステート1の処理
-        rospy.sleep(3)
-
-        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
-        if self.is_stop_receive:
-            self.is_stop_receive = False
-            # 受け取っていたら終了。(終了処理とかもここに)
-            return 'end'
-
-        return 'end'
-
     def stop_callback(self, data):
         self.is_stop_receive = True
 
 
-class PathFinding(smach.State):
+class Selecting(SubBehaviorBase):
 
     def __init__(self):
-        smach.State.__init__(self, outcomes=['selecting', 'end'])
-
-        # 停止トピックを受け取るための定義。
-        robot_name = rospy.get_param('~robot_name')
-        self.name = robot_name
-        self.stop_sub = rospy.Subscriber(
-                '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
-        self.is_stop_receive = False
+        super().__init__(['path_finding', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -109,22 +90,11 @@ class PathFinding(smach.State):
 
         return 'end'
 
-    def stop_callback(self, data):
-        self.is_stop_receive = True
 
-
-class Moving(smach.State):
+class PathFinding(SubBehaviorBase):
 
     def __init__(self):
-        # このステートの返り値リストを定義。
-        smach.State.__init__(self, outcomes=['reading', 'end'])
-
-        # 停止トピックを受け取るための定義。
-        robot_name = rospy.get_param('~robot_name')
-        self.name = robot_name
-        self.stop_sub = rospy.Subscriber(
-                '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
-        self.is_stop_receive = False
+        super().__init__(['selecting', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -138,22 +108,11 @@ class Moving(smach.State):
 
         return 'end'
 
-    def stop_callback(self, data):
-        self.is_stop_receive = True
 
-
-class Reading(smach.State):
+class Moving(SubBehaviorBase):
 
     def __init__(self):
-        # このステートの返り値リストを定義。
-        smach.State.__init__(self, outcomes=['selecting', 'end'])
-
-        # 停止トピックを受け取るための定義。
-        robot_name = rospy.get_param('~robot_name')
-        self.name = robot_name
-        self.stop_sub = rospy.Subscriber(
-                '/{}/state_stop'.format(self.name), Bool, self.stop_callback)
-        self.is_stop_receive = False
+        super().__init__(['reading', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -167,5 +126,20 @@ class Reading(smach.State):
 
         return 'end'
 
-    def stop_callback(self, data):
-        self.is_stop_receive = True
+
+class Reading(SubBehaviorBase):
+
+    def __init__(self):
+        super().__init__(['selecting', 'end'])
+
+    def execute(self, userdata):
+        # ステート1の処理
+        rospy.sleep(3)
+
+        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
+        if self.is_stop_receive:
+            self.is_stop_receive = False
+            # 受け取っていたら終了。(終了処理とかもここに)
+            return 'end'
+
+        return 'end'
