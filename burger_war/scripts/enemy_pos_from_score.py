@@ -21,7 +21,7 @@ class EnemyPosFromScore:
 
         self.__points = INIT_POINTS[self.__side]
 
-        rospy.Subscriber(topic_ws, String, self.__ws_callback, queue_size=1)
+        rospy.Subscriber(topic_ws, String, self.__ws_callback)
 
     def execute(self):
         rate = int(rospy.get_param("~rate"))
