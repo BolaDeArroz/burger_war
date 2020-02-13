@@ -29,19 +29,22 @@ class bevavior_attack(smach.State):
         with sm_sub:
             # 最初にaddしたステートが開始時のステート
             smach.StateMachine.add('Selecting', Selecting(), transitions={
-                'path_finding': 'PathFinding',
+                'success': 'PathFinding',
                 'end': 'outcome'  # ←sm_sub自体の終了
             })
             smach.StateMachine.add('PathFinding', PathFinding(), transitions={
-                'selecting': 'Selecting',
+                'success': 'Moving',
+                'fail': 'Selecting',
                 'end': 'outcome'  # ←sm_sub自体の終了
             })
             smach.StateMachine.add('Moving', Moving(), transitions={
-                'reading': 'Reading',
+                'success': 'Reading',
+                'fail': 'PathFinding',
+                'read': 'Selecting',
                 'end': 'outcome'  # ←sm_sub自体の終了
             })
             smach.StateMachine.add('Reading', Reading(), transitions={
-                'selecting': 'Selecting',
+                'success': 'Selecting',
                 'end': 'outcome'  # ←sm_sub自体の終了
             })
 
