@@ -45,6 +45,7 @@ class bevavior_attack(smach.State):
             })
             smach.StateMachine.add('Reading', Reading(), transitions={
                 'success': 'Selecting',
+                'timeout': 'Selecting',
                 'end': 'outcome'  # ←sm_sub自体の終了
             })
 
@@ -79,7 +80,7 @@ class SubBehaviorBase(smach.State):
 class Selecting(SubBehaviorBase):
 
     def __init__(self):
-        super().__init__(['path_finding', 'end'])
+        super().__init__(['success', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -97,7 +98,7 @@ class Selecting(SubBehaviorBase):
 class PathFinding(SubBehaviorBase):
 
     def __init__(self):
-        super().__init__(['selecting', 'end'])
+        super().__init__(['success', 'fail', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -115,7 +116,7 @@ class PathFinding(SubBehaviorBase):
 class Moving(SubBehaviorBase):
 
     def __init__(self):
-        super().__init__(['reading', 'end'])
+        super().__init__(['success', 'fail', 'read', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
@@ -133,7 +134,7 @@ class Moving(SubBehaviorBase):
 class Reading(SubBehaviorBase):
 
     def __init__(self):
-        super().__init__(['selecting', 'end'])
+        super().__init__(['success', 'timeout', 'end'])
 
     def execute(self, userdata):
         # ステート1の処理
