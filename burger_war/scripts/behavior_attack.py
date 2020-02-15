@@ -14,10 +14,9 @@ class bevavior_attack(smach.State):
 
         smach.State.__init__(self, outcomes=['outcome'])
 
-    def execute(self, userdata):
         # 内部のステートマシンsm_subを定義
         # この内部ステートマシンは,outcome
-        sm_sub = smach.StateMachine(outcomes=['outcome'])
+        self.sm_sub = smach.StateMachine(outcomes=['outcome'])
 
         # sm_subにステートを追加
         # ステートにできるのは、smach.Stateを継承したクラスのみ。(だと思う)
@@ -26,7 +25,7 @@ class bevavior_attack(smach.State):
         #                        transitions={'ステートの返り値1':返り値1の時に遷移するステート名,
         #                                     'ステートの返り値2':返り値2の時に遷移するステート名}
         # ってな感じで、遷移先が複数あるならtransitionsをどんどん追加していく
-        with sm_sub:
+        with self.sm_sub:
             # 最初にaddしたステートが開始時のステート
             smach.StateMachine.add('Selecting', Selecting(), transitions={
                 'success': 'PathFinding',
@@ -51,11 +50,12 @@ class bevavior_attack(smach.State):
 
         # 下2行はsmach_viewerでステートを確認するために必要
         sis = smach_ros.IntrospectionServer(
-                'server_name', sm_sub, '/SM_ATTACK')
+                'server_name', self.sm_sub, '/SM_ATTACK')
         sis.start()
 
+    def execute(self, userdata):
         # 内部のステートマシンの実行
-        sm_sub.execute()
+        self.sm_sub.execute()
 
         return 'outcome'
 
