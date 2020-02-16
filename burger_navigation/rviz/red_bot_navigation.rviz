@@ -10,6 +10,10 @@ Panels:
         - /TF1/Tree1
         - /Planner Plan1
         - /Global Map1
+        - /TebPlanner1
+        - /TebPlanner1/Marker1
+        - /Map2
+        - /Marker1
       Splitter Ratio: 0.5
     Tree Height: 503
   - Class: rviz/Selection
@@ -30,6 +34,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: LaserScan
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -162,12 +168,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: false
+      Enabled: true
       Name: Map
       Topic: /red_bot/map
       Unreliable: false
       Use Timestamp: false
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -197,17 +203,17 @@ Visualization Manager:
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: true
-          Enabled: true
+          Enabled: false
           Name: Costmap
           Topic: /red_bot/move_base/global_costmap/costmap
           Unreliable: false
           Use Timestamp: false
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
           Color: 255; 0; 0
-          Enabled: true
+          Enabled: false
           Head Diameter: 0.300000012
           Head Length: 0.200000003
           Length: 0.300000012
@@ -225,8 +231,8 @@ Visualization Manager:
           Shaft Length: 0.100000001
           Topic: /red_bot/move_base/GlobalPlanner/plan
           Unreliable: false
-          Value: true
-      Enabled: true
+          Value: false
+      Enabled: false
       Name: Global Map
     - Class: rviz/Group
       Displays:
@@ -337,14 +343,13 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/Marker
-          Enabled: true
+          Enabled: false
           Marker Topic: /red_bot/move_base/TebLocalPlannerROS/teb_markers
           Name: Marker
           Namespaces:
-            PointObstacles: true
-            RobotFootprintModel: true
+            {}
           Queue Size: 1
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
@@ -386,6 +391,53 @@ Visualization Manager:
           Value: true
       Enabled: true
       Name: TebPlanner
+    - Alpha: 0.699999988
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /red_bot/enemy_prob_map
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Alpha: 0.699999988
+      Class: rviz/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic: /map_py
+      Unreliable: false
+      Use Timestamp: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /red_bot/enemy_marker
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Circles color: 170; 0; 0
+      Class: Obstacles
+      Enabled: true
+      Margin color: 0; 170; 0
+      Name: Obstacles
+      Opacity: 0.75
+      Segments color: 170; 170; 0
+      Segments thickness: 0.0299999993
+      Topic: /red_bot/obstacles
+      Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /red_bot/enemy_pos_from_lider_marker
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -416,7 +468,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 193.413177
+      Scale: 153.770721
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
       X: 0
