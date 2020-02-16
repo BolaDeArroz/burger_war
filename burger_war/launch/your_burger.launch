@@ -1,16 +1,36 @@
 <?xml version="1.0"?>
 <launch>
-  <arg name="robot_name" default=""/> <!-- robot_name for use NAMESPACE -->
-  <arg name="side" default="b"/> <!-- "b" = blue side, "r" = red side  -->
-
+  <arg name="side" default="r"/> <!-- "b" = blue side, "r" = red side  -->
     <!-- You can change control program  -->
 
     <!-- Launch Navigation -->
     <include file="$(find burger_navigation)/launch/your_burger_navigation_sample.launch">
-        <arg name="robot_name" value="$(arg robot_name)" />
+        <!-- <arg name="robot_name" value="$(arg robot_name)" />-->
     </include>
 
     <!-- my program node -->
+    <!-- 
+    <node pkg="aruco_ros" type="marker_publisher" name="bla_sniper_aruco">
+       <param name="use_camera_info" value="False"/>
+       <remap from="/image" to="snipe_image" />
+       <remap from="~markers" to="target_id" />
+    </node>
+    <node pkg="bla_sniper" type="bla_sniper" name="bla_sniper" output="screen">
+      <remap from="~in_image" to="image_raw"/>
+      <remap from="~out_image" to="snipe_image"/>
+    </node>
+     -->
+    <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
+        <!-- <param name="robot_name" value="$(arg robot_name)" />-->
+    </node>
+    <node pkg="burger_war" type="enemy_finder.py" name="EnemyFinder" output="screen"> 
+        <!-- <param name="robot_name" value="$(arg robot_name)" /> -->
+    </node>
+    <!-- 
+    <node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
+        <param name="robot_name" value="$(arg robot_name)" /> 
+    </node>
+     -->
     <node pkg="burger_war" type="rem_time.py" name="rem_time" output="screen">
         <param name="time" value="180" />
         <param name="unit" value="1" />
@@ -22,6 +42,7 @@
     </node>
 
     <!-- END my program node -->
+
 
     <!-- End of your space  -->
 </launch>

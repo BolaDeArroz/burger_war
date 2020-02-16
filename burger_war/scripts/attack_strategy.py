@@ -12,7 +12,8 @@ from attackrun import AttackBot
 
 class AttackStrategy():
     def __init__(self):
-        self.name = rospy.get_param("~robot_name")
+        # self.name = rospy.get_param("~robot_name")
+        self.name = ""
         self.rate = rospy.Rate(30)
         self.tf_listener = tf.TransformListener()
         self.mov_sub = rospy.Subscriber("array_ex", Float32MultiArray, self.enemy_callback)
