@@ -85,7 +85,8 @@ def calc_points(side, points, diff):
     if INV_SIDE[side] in diff.values():
         points = init_points(side, diff)
 
-    points = open_points(points)
+    else:
+        points = open_points(points)
 
     return points
 
