@@ -89,7 +89,7 @@ class Selecting(SubBehaviorBase):
     def __init__(self):
         super(Selecting, self).__init__(['success', 'end'], [], ['target'])
 
-        self.score = [1]
+        self.score = []
 
         rospy.Subscriber('pub_score', Float32MultiArray, self.score_callback)
 
@@ -211,17 +211,19 @@ class Reading(SubBehaviorBase):
         return 'end'
 
 
-POINTS = [
-        (-530, 760, -math.pi / 2),
-        (530, 760, -math.pi / 2),
-        (-530, 300, math.pi / 2),
-        (530, 300, math.pi / 2),
-        (0, 300, -math.pi / 2),
-        (-300, 0, 0),
-        (300, 0, math.pi),
-        (0, -300, math.pi / 2),
+POINTS = eval("""
+[
+        (-530,  760, -math.pi / 2),
+        ( 530,  760, -math.pi / 2),
+        (-530,  300,  math.pi / 2),
+        ( 530,  300,  math.pi / 2),
+        (   0,  300, -math.pi / 2),
+        (-300,    0, -math.pi),
+        ( 300,    0,  math.pi),
+        (   0, -300,  math.pi / 2),
         (-530, -300, -math.pi / 2),
-        (530, -300, -math.pi / 2),
-        (-530, -760, math.pi / 2),
-        (530, -760, math.pi / 2)
+        ( 530, -300, -math.pi / 2),
+        (-530, -760,  math.pi / 2),
+        ( 530, -760,  math.pi / 2)
 ]
+""")
