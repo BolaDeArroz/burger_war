@@ -11,17 +11,16 @@ class EnemyPosFromScore:
     def __init__(self):
         topic_ws = str(rospy.get_param("~topic_ws"))
 
-        self.__side = str(rospy.get_param("~side"))
+        self.side = str(rospy.get_param("~side"))
 
-        self.__pub = rospy.Publisher(
-                NODE_NAME, Float32MultiArray, queue_size=1)
+        self.pub = rospy.Publisher(NODE_NAME, Float32MultiArray, queue_size=1)
 
-        self.__old = {}
-        self.__new = {}
+        self.old = {}
+        self.new = {}
 
-        self.__points = INIT_POINTS[self.__side]
+        self.points = INIT_POINTS[self.side]
 
-        rospy.Subscriber(topic_ws, String, self.__ws_callback)
+        rospy.Subscriber(topic_ws, String, self.ws_callback)
 
     def execute(self):
         rate = int(rospy.get_param("~rate"))
@@ -29,22 +28,22 @@ class EnemyPosFromScore:
         r = rospy.Rate(rate)
 
         while not rospy.is_shutdown():
-            self.__publish()
+            self.publish()
 
             r.sleep()
 
-    def __publish(self):
+    def publish(self):
         msg = Float32MultiArray()
 
-        msg.data, self.__points = calc_posmap(
-                self.__side, self.__points, self.__old, self.__new)
+        msg.data, self.points = calc_posmap(
+                self.side, self.points, self.old, self.new)
 
-        self.__old = self.__new
+        self.old = self.new
 
-        self.__pub.publish(msg)
+        self.pub.publish(msg)
 
-    def __ws_callback(self, data):
-        self.__new = json_to_targets(json.loads(data.data))
+    def ws_callback(self, data):
+        self.new = json_to_targets(json.loads(data.data))
 
 
 def json_to_targets(json_data):

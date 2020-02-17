@@ -8,24 +8,24 @@ from std_msgs.msg import Time
 
 class RemTime:
     def __init__(self):
-        self.__pub = rospy.Publisher(NODE_NAME, Time, queue_size=1)
+        self.pub = rospy.Publisher(NODE_NAME, Time, queue_size=1)
 
-        self.__time = int(rospy.get_param("~time"))
-        self.__unit = int(rospy.get_param("~unit"))
+        self.time = int(rospy.get_param("~time"))
+        self.unit = int(rospy.get_param("~unit"))
 
-        rospy.Timer(rospy.Duration(self.__unit), self.__timer_callback)
+        rospy.Timer(rospy.Duration(self.unit), self.timer_callback)
 
-    def __timer_callback(self, data):
-        self.__time -= self.__unit
+    def timer_callback(self, data):
+        self.time -= self.unit
 
-        if self.__time < 0:
-            self.__time = 0
+        if self.time < 0:
+            self.time = 0
 
         msg = Time()
 
-        msg.data = rospy.Time(secs=self.__time)
+        msg.data = rospy.Time(secs=self.time)
 
-        self.__pub.publish(msg)
+        self.pub.publish(msg)
 
 
 NODE_NAME = "rem_time"
