@@ -40,6 +40,9 @@
         <param name="side" value="$(arg side)" />
         <param name="rate" value="1" />
     </node>
+    <node pkg="burger_war" type="behavior.py" name="behavior_node" output="screen"> 
+        <!-- <param name="robot_name" value="$(arg robot_name)" /> -->
+    </node>
 
     <!-- END my program node -->
 
