@@ -60,13 +60,10 @@ class bevavior_attack(smach.State):
 
 class SubBehaviorBase(smach.State):
 
-    def __init__(self, outcomes, input_keys=[], output_keys=[]):
+    def __init__(self, outcomes, in_keys=[], out_keys=[]):
         # このステートの返り値リストを定義。
         smach.State.__init__(
-                self,
-                outcomes=outcomes,
-                input_keys=input_keys,
-                output_keys=output_keys)
+                self, outcomes=outcomes, in_keys=in_keys, out_keys=out_keys)
 
         # 停止トピックを受け取るための定義。
         rospy.Subscriber('state_stop', Bool, self.stop_callback)
@@ -87,7 +84,8 @@ class SubBehaviorBase(smach.State):
 class Selecting(SubBehaviorBase):
 
     def __init__(self):
-        super(Selecting, self).__init__(['success', 'end'], [], ['target'])
+        super(Selecting, self).__init__(
+                ['success', 'end'], [], ['target'])
 
         self.score = []
 
@@ -121,7 +119,8 @@ class Selecting(SubBehaviorBase):
 class Moving(SubBehaviorBase):
 
     def __init__(self):
-        super(Moving, self).__init__(['success', 'fail', 'read', 'end'], ['target'], [])
+        super(Moving, self).__init__(
+                ['success', 'fail', 'read', 'end'], ['target'], [])
 
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
@@ -138,7 +137,7 @@ class Moving(SubBehaviorBase):
 
             next = self.check_client_state()
 
-            if next != '':
+            if next is not None:
                 return next
 
             r.sleep()
@@ -169,13 +168,13 @@ class Moving(SubBehaviorBase):
         state = self.client.get_state()
 
         if state == actionlib_msgs.msg.GoalStatus.PENDING:
-            return ''
+            return None
 
         if state == actionlib_msgs.msg.GoalStatus.ACTIVE:
-            return ''
+            return None
 
         if state == actionlib_msgs.msg.GoalStatus.RECALLED:
-            return ''
+            return None
 
         if state == actionlib_msgs.msg.GoalStatus.REJECTED:
             return 'fail'
@@ -192,13 +191,14 @@ class Moving(SubBehaviorBase):
         if state == actionlib_msgs.msg.GoalStatus.LOST:
             return 'fail'
 
-        return ''
+        return None
 
 
 class Reading(SubBehaviorBase):
 
     def __init__(self):
-        super(Reading, self).__init__(['success', 'timeout', 'end'], [], [])
+        super(Reading, self).__init__(
+                ['success', 'timeout', 'end'], [], [])
 
     def execute(self, userdata):
         r = rospy.Rate(60)
