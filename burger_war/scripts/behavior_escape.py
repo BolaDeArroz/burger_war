@@ -11,7 +11,7 @@ import actionlib
 import actionlib_msgs
 
 from std_msgs.msg import Bool,Float32MultiArray
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point,Twist
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
@@ -93,7 +93,7 @@ class CalcEnemyPos(smach.State):
         # rospy終了か、停止トピックを受け取ったらループ抜ける。
         r=rospy.Rate(5)
         self.is_stop_receive=False
-        while (not rospy.is_shutdown()) or (self.is_stop_receive==False):
+        while (not rospy.is_shutdown()) and (self.is_stop_receive==False):
             #敵の位置を推測
             if self.enemy_pos_from_lider["is_topic_receive"]:
                 userdata.enemy_pos_out=self.enemy_pos_from_lider["enemy_pos"]
@@ -122,14 +122,21 @@ class GoToEscapePoint(smach.State):
         goal.target_pose.pose.orientation.w = q[3]
  
         self.client.send_goal(goal)
-
-        wait = self.client.wait_for_result()
-        if not wait:
-            rospy.logerr("Action server not available!")
-            rospy.signal_shutdown("Action server not available!")
-        else:
-            return self.client.get_result()  
-
+        r = rospy.Rate(5)
+        while (not rospy.is_shutdown()) and \
+                self.client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,\
+                                            actionlib_msgs.msg.GoalStatus.PENDING]:
+            r.sleep()
+            now = rospy.Time.now()
+            if self.is_stop_receive == True:
+                self.client.cancel_goal()
+                break
+        
+        #移動停止
+        
+        for _ in range(5):
+            self.vel_pub.publish(Twist())
+            r.sleep()
 
     def stop_callback(self,data):
         self.is_stop_receive=True
@@ -149,6 +156,9 @@ class GoToEscapePoint(smach.State):
         #Move base クライアント
         self.client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
 
+        # velocity publisher
+        self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
+
 
     def execute(self,userdata):
         r=rospy.Rate(5)
@@ -158,14 +168,12 @@ class GoToEscapePoint(smach.State):
             #逃げる位置計算
             enemy_pos=userdata.enemy_pos_in
             print(enemy_pos)
-            #中心から見て反対地点に逃げる
-            escape_pos_x=enemy_pos.x
-            escape_pos_y=enemy_pos.y
-            
-
-            #逃げる処理
-            self.setGoal(-escape_pos_y,escape_pos_x,0)
-
+            #中心挟んで相手の反対地点に逃げる
+            escape_pos_x=-enemy_pos.x
+            escape_pos_y=-enemy_pos.y
+            print(escape_pos_x,escape_pos_y)
+            #逃げる処理(ゴールはマップ中心を向くように設定)
+            self.setGoal(escape_pos_y,-escape_pos_x,math.atan2(-escape_pos_x,escape_pos_y)+math.pi)
             return 'is_Gone'
         
         self.is_stop_receive=False
