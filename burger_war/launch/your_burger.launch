@@ -32,8 +32,13 @@
     <node pkg="burger_war" type="behavior.py" name="behavior_node" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
-    <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider_node" output="screen"> 
+    <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
+    </node>
+    <node pkg="burger_war" type="enemy_pos_from_score.py" name="enemy_pos_from_score" output="screen">
+        <param name="topic_ws" value="war_state" />
+        <param name="side" value="$(arg side)" />
+        <param name="rate" value="1" />
     </node>
     <!--<node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
