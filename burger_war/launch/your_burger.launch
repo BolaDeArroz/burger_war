@@ -20,9 +20,9 @@
       <remap from="~in_image" to="image_raw"/>
       <remap from="~out_image" to="snipe_image"/>
     </node>-->
-    <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
+    <!--<node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
-    </node>
+    </node>-->
     <!--<node pkg="burger_war" type="enemy_finder.py" name="EnemyFinder" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>-->
