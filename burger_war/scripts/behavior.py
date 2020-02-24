@@ -7,7 +7,7 @@ import rospy
 import smach
 import smach_ros
 import behavior_XXX
-
+import behavior_escape
 class behavior:
     def __init__(self):
         pass
@@ -24,8 +24,9 @@ class behavior:
                                             'end':'outcome'
                                             })
             #逃げる動作
-            smach.StateMachine.add('Escape', behavior_XXX.bevavior_XXX(),
-                               transitions={'outcome':'Strategy'})
+            smach.StateMachine.add('Escape', behavior_escape.bevavior_escape(),
+                               transitions={'outcome':'Escape'})
+#                               transitions={'outcome':'Strategy'})
             #点数を取りに行く動作
             smach.StateMachine.add('Attack', behavior_XXX.bevavior_XXX(),
                                transitions={'outcome':'Strategy'})
@@ -56,7 +57,8 @@ class behavior_strategy(smach.State):
         if(self.dummy_counter==0):
             return 'escape'
         elif(self.dummy_counter==1):
-            return 'attack'
+            return 'escape'
+#            return 'attack'
         else:
             return 'disturb'
 

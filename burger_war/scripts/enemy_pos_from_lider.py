@@ -41,7 +41,7 @@ class enemy_pos_from_lider:
         self.marker.header.frame_id="/"+self.name+"/map"
         self.marker.ns = "basic_shapes"
         self.marker.id = 0
-        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.1
+        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.2
         self.marker.color.a=1.0
         self.marker.color.r=1.0
         self.marker.type=Marker.CUBE

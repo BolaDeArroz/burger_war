@@ -1,7 +1,0 @@
-image: ./enemy_prob_map.pgm
-resolution: 0.068000
-origin: [-1.677000, -1.697000, 0.000000]
-negate: 0
-occupied_thresh: 0.65
-free_thresh: 0.196
-

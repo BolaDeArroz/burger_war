@@ -9,10 +9,10 @@ Panels:
         - /TF1/Frames1
         - /TF1/Tree1
         - /Planner Plan1
+        - /Planner Plan1/Status1
         - /Global Map1
         - /TebPlanner1
         - /TebPlanner1/Marker1
-        - /Map2
         - /Marker1
       Splitter Ratio: 0.5
     Tree Height: 503
@@ -391,26 +391,6 @@ Visualization Manager:
           Value: true
       Enabled: true
       Name: TebPlanner
-    - Alpha: 0.699999988
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
-      Enabled: true
-      Name: Map
-      Topic: /red_bot/enemy_prob_map
-      Unreliable: false
-      Use Timestamp: false
-      Value: true
-    - Alpha: 0.699999988
-      Class: rviz/Map
-      Color Scheme: map
-      Draw Behind: false
-      Enabled: true
-      Name: Map
-      Topic: /map_py
-      Unreliable: false
-      Use Timestamp: false
-      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /red_bot/enemy_marker
@@ -435,7 +415,7 @@ Visualization Manager:
       Marker Topic: /red_bot/enemy_pos_from_lider_marker
       Name: Marker
       Namespaces:
-        {}
+        basic_shapes: true
       Queue Size: 100
       Value: true
   Enabled: true
