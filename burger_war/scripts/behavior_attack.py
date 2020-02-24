@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 import actionlib
 import actionlib_msgs
 import math
@@ -9,93 +10,104 @@ import smach_ros
 import tf
 
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
-from std_msgs.msg import Bool, Float32MultiArray
+from std_msgs.msg import Bool, Int32MultiArray
 
 
 class bevavior_attack(smach.State):
     def __init__(self):
-
         smach.State.__init__(self, outcomes=['outcome'])
 
-        # 内部のステートマシンsm_subを定義
-        # この内部ステートマシンは,outcome
         self.sm_sub = smach.StateMachine(outcomes=['outcome'])
 
-        # sm_subにステートを追加
-        # ステートにできるのは、smach.Stateを継承したクラスのみ。(だと思う)
-        # smach.StateMachine.addでステートを追加する
-        # smach.StateMachine.add(ステート名,クラス名(=実体),
-        #                        transitions={'ステートの返り値1':返り値1の時に遷移するステート名,
-        #                                     'ステートの返り値2':返り値2の時に遷移するステート名}
-        # ってな感じで、遷移先が複数あるならtransitionsをどんどん追加していく
         with self.sm_sub:
-            # 最初にaddしたステートが開始時のステート
-            smach.StateMachine.add('Selecting', Selecting(), transitions={
+            func = CommonFunction()
+
+            smach.StateMachine.add('Selecting', Selecting(func), transitions={
                 'success': 'Moving',
-                'end': 'outcome'  # ←sm_sub自体の終了
+                'end': 'outcome'
             })
-            smach.StateMachine.add('Moving', Moving(), transitions={
+            smach.StateMachine.add('Moving', Moving(func), transitions={
                 'success': 'Reading',
                 'fail': 'Selecting',
                 'read': 'Selecting',
-                'end': 'outcome'  # ←sm_sub自体の終了
+                'end': 'outcome'
             })
-            smach.StateMachine.add('Reading', Reading(), transitions={
+            smach.StateMachine.add('Reading', Reading(func), transitions={
                 'success': 'Selecting',
                 'timeout': 'Selecting',
-                'end': 'outcome'  # ←sm_sub自体の終了
+                'end': 'outcome'
             })
 
-        # 下2行はsmach_viewerでステートを確認するために必要
         sis = smach_ros.IntrospectionServer(
                 'server_name', self.sm_sub, '/SM_ATTACK')
+
         sis.start()
 
     def execute(self, userdata):
-        # 内部のステートマシンの実行
         self.sm_sub.execute()
 
         return 'outcome'
 
 
-class SubBehaviorBase(smach.State):
-
-    def __init__(self, outcomes, in_keys=[], out_keys=[]):
-        # このステートの返り値リストを定義。
-        smach.State.__init__(
-                self, outcomes=outcomes, in_keys=in_keys, out_keys=out_keys)
-
-        # 停止トピックを受け取るための定義。
-        rospy.Subscriber('state_stop', Bool, self.stop_callback)
+class CommonFunction:
+    def __init__(self):
         self.is_stop_receive = False
+        self.score = []
+        self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+
+        rospy.Subscriber('state_stop', Bool, self.stop_callback)
+        rospy.Subscriber('pub_score', Int32MultiArray, self.score_callback)
 
     def stop_callback(self, data):
         self.is_stop_receive = True
 
+    def score_callback(self, data):
+        self.score = data.data
+
     def check_stop(self):
-        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
-        if self.is_stop_receive:
-            self.is_stop_receive = False
-            return True
+        result = self.is_stop_receive
 
-        return False
+        self.is_stop_receive = False
+
+        return result
+
+    def check_client(self):
+        return self.client.get_state()
+
+    def set_goal(self, x, y, yaw):
+        self.client.wait_for_server()
+
+        goal = MoveBaseGoal()
+
+        goal.target_pose.header.frame_id = 'map'
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose.position.x = x
+        goal.target_pose.pose.position.y = y
+
+        q = tf.transformations.quaternion_from_euler(0, 0, yaw)
+
+        goal.target_pose.pose.orientation.x = q[0]
+        goal.target_pose.pose.orientation.y = q[1]
+        goal.target_pose.pose.orientation.z = q[2]
+        goal.target_pose.pose.orientation.w = q[3]
+
+        self.client.send_goal(goal)
 
 
-class Selecting(SubBehaviorBase):
+class Selecting(smach.State):
+    def __init__(self, func):
+        smach.State.__init__(
+                self,
+                outcomes=['success', 'end'],
+                out_keys=['target'])
 
-    def __init__(self):
-        super(Selecting, self).__init__(
-                ['success', 'end'], [], ['target'])
-
-        self.score = []
-
-        rospy.Subscriber('pub_score', Float32MultiArray, self.score_callback)
+        self.func = func
 
     def execute(self, userdata):
         r = rospy.Rate(60)
 
         while not rospy.is_shutdown():
-            if self.check_stop():
+            if self.func.check_stop():
                 return 'end'
 
             target = self.select()
@@ -109,63 +121,41 @@ class Selecting(SubBehaviorBase):
 
         return 'end'
 
-    def score_callback(self, data):
-        self.score = data.data
-
     def select(self):
-        return self.score.index(1) if 1 in self.score else None
+        return self.func.score.index(1) if 1 in self.func.score else None
 
 
-class Moving(SubBehaviorBase):
+class Moving(smach.State):
+    def __init__(self, func):
+        smach.State.__init__(
+                self,
+                outcomes=['success', 'fail', 'read', 'end'],
+                in_keys=['target'])
 
-    def __init__(self):
-        super(Moving, self).__init__(
-                ['success', 'fail', 'read', 'end'], ['target'], [])
-
-        self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
+        self.func = func
 
     def execute(self, userdata):
         r = rospy.Rate(60)
 
         x, y, yaw = POINTS[userdata.target]
 
-        self.set_goal(x, y, yaw)
+        self.func.set_goal(x, y, yaw)
 
         while not rospy.is_shutdown():
-            if self.check_stop():
+            if self.func.check_stop():
                 return 'end'
 
-            next = self.check_client_state()
+            result = self.check()
 
-            if next is not None:
-                return next
+            if result is not None:
+                return result
 
             r.sleep()
 
         return 'end'
 
-    def set_goal(self, x, y, yaw):
-        self.client.wait_for_server()
-
-        goal = MoveBaseGoal()
-
-        goal.target_pose.header.frame_id = 'map'
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = x
-        goal.target_pose.pose.position.y = y
-
-        # Euler to Quartanion
-        q = tf.transformations.quaternion_from_euler(0, 0, yaw)
-
-        goal.target_pose.pose.orientation.x = q[0]
-        goal.target_pose.pose.orientation.y = q[1]
-        goal.target_pose.pose.orientation.z = q[2]
-        goal.target_pose.pose.orientation.w = q[3]
-
-        self.client.send_goal(goal)
-
-    def check_client_state(self):
-        state = self.client.get_state()
+    def check(self):
+        state = self.func.check_client()
 
         if state == actionlib_msgs.msg.GoalStatus.PENDING:
             return None
@@ -194,11 +184,13 @@ class Moving(SubBehaviorBase):
         return None
 
 
-class Reading(SubBehaviorBase):
+class Reading(smach.State):
+    def __init__(self, func):
+        smach.State.__init__(
+                self,
+                outcomes=['success', 'timeout', 'end'])
 
-    def __init__(self):
-        super(Reading, self).__init__(
-                ['success', 'timeout', 'end'], [], [])
+        self.func = func
 
     def execute(self, userdata):
         r = rospy.Rate(60)
