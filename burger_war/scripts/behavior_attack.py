@@ -168,16 +168,16 @@ class Selecting(smach.State):
         # TODO: 履歴
         costs = BASE_COSTS[:]
 
-        my_markers = self.func.check_score()
+        score = self.func.check_score()
 
-        enemy_map = self.func.check_enemy_pos_from_score()
+        enemy = self.func.check_enemy_pos_from_score()
 
-        for i in my_markers:
+        for i in score:
             costs[i] += K_MY_MARKER
 
         for i, _ in enumerate(costs):
             for j in NEAR_CELLS[i]:
-                costs[i] += enemy_map[j] * K_ENEMY_POS_FROM_SCORE
+                costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
 
         index = costs.index(min(costs))
 
@@ -206,7 +206,7 @@ class Moving(smach.State):
             if not self.func.is_data_exists():
                 continue
 
-            result = self.check()
+            result = self.check(userdata.target)
 
             if result is not None:
                 self.func.cancel_goal()
@@ -217,7 +217,12 @@ class Moving(smach.State):
 
         return 'end'
 
-    def check(self):
+    def check(self, target):
+        score = self.func.check_score()
+
+        if target in score:
+            return 'read'
+
         state = self.func.check_client()
 
         if state == actionlib_msgs.msg.GoalStatus.PENDING:
@@ -265,9 +270,22 @@ class Reading(smach.State):
             if (rospy.Time.now() - start).to_sec() > TIMEOUT_READING:
                 return 'timeout'
 
+            result = self.check(userdata.target)
+
+            if result is not None:
+                return result
+
             r.sleep()
 
         return 'end'
+
+    def check(self, target):
+        score = self.func.check_score()
+
+        if target in score:
+            return 'success'
+
+        return None
 
 
 RATE = 10
