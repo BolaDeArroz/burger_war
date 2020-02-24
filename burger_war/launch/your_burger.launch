@@ -20,15 +20,17 @@
       <remap from="~in_image" to="image_raw"/>
       <remap from="~out_image" to="snipe_image"/>
     </node>-->
+
     <!--
     <node pkg="burger_war" type="bola_de_arroz.py" name="AttackRunBot" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
 
     <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider_node" output="screen"> 
+
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
-    <node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
+    <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider_node" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>-->
     
@@ -44,13 +46,10 @@
     <node pkg="burger_war" type="behavior.py" name="behavior_node" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
-    
+
     <include file="$(find burger_war)/launch/obstacle_detector.launch">
         <arg name="robot_name" value="$(arg robot_name)" />
     </include>
-
-
-
 
 
 
