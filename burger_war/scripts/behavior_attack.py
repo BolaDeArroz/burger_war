@@ -23,7 +23,7 @@ class bevavior_attack(smach.State):
             func = CommonFunction()
 
             smach.StateMachine.add('Selecting', Selecting(func), transitions={
-                'success': 'Reading',
+                'success': 'Moving',
                 'end': 'outcome'
             })
             smach.StateMachine.add('Moving', Moving(func), transitions={
@@ -144,6 +144,8 @@ class Selecting(smach.State):
     def execute(self, userdata):
         r = rospy.Rate(RATE)
 
+        self.func.reset()
+
         while not rospy.is_shutdown():
             if self.func.check_stop():
                 return 'end'
@@ -169,7 +171,6 @@ class Selecting(smach.State):
         costs = BASE_COSTS[:]
 
         score = self.func.check_score()
-
         enemy = self.func.check_enemy_pos_from_score()
 
         for i in score:
@@ -197,6 +198,7 @@ class Moving(smach.State):
     def execute(self, userdata):
         r = rospy.Rate(RATE)
 
+        self.func.reset()
         self.func.set_goal(*(POINTS[userdata.target]))
 
         while not rospy.is_shutdown():
@@ -258,6 +260,8 @@ class Reading(smach.State):
         # TODO: 当たらない程度に移動
         r = rospy.Rate(RATE)
 
+        self.func.reset()
+
         start = rospy.Time.now()
 
         while not rospy.is_shutdown():
@@ -297,7 +301,7 @@ TIMEOUT_READING = 5
 K_MY_MARKER = 100
 
 
-K_ENEMY_POS_FROM_SCORE = 10
+K_ENEMY_POS_FROM_SCORE = 1
 
 
 POINTS = eval("""
