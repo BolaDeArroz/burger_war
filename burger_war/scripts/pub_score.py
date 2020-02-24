@@ -19,14 +19,14 @@ class PubScore():
         self.name = robot_name
         # markers name: order is decided by zyali's board
         self.markers_name_list = [
-        'OctopusWiener_S', 'Pudding_S', 
-        'OctopusWiener_N', 'Pudding_N',
-        'FriedShrimp_S', 'FriedShrimp_E',
-        'FriedShrimp_W', 'FriedShrimp_N',
-        'Omelette_S', 'Tomato_S', 
-        'Omelette_N', 'Tomato_N',
-        'RE_L', 'RE_R', 'RE_B',
-        'BL_L', 'BL_R', 'BL_B']
+            'Tomato_N', 'Omelette_N',
+            'Tomato_S', 'Omelette_S', 
+            'FriedShrimp_N','FriedShrimp_W', 
+            'FriedShrimp_E','FriedShrimp_S', 
+            'Pudding_N','OctopusWiener_N', 
+            'Pudding_S', 'OctopusWiener_S', 
+            'RE_L', 'RE_R', 'RE_B',
+            'BL_L', 'BL_R', 'BL_B']
 
         # sub
         self.war_state=None

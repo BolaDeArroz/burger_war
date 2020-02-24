@@ -61,6 +61,9 @@ class behavior_strategy(smach.State):
 #            return 'attack'
         else:
             return 'disturb'
+    
+    def strategy(self):
+        pass
 
         
 def main(args):

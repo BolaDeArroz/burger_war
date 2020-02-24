@@ -39,7 +39,7 @@
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
     <node pkg="burger_war" type="behavior.py" name="behavior_node" output="screen"> 
-
+    </node>
     <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>
@@ -50,7 +50,7 @@
     </node>
     <!--<node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
-    </node>
+    </node>-->
 
     <include file="$(find burger_war)/launch/obstacle_detector.launch">
         <arg name="robot_name" value="$(arg robot_name)" />
