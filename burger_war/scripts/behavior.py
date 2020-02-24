@@ -7,7 +7,7 @@ import rospy
 import smach
 import smach_ros
 import behavior_XXX
-import behavior_escape
+import behavior_escape, behavior_attack, behavior_disturb
 
 
 from std_msgs.msg import Float32MultiArray
@@ -33,10 +33,10 @@ class behavior:
                                transitions={'outcome':'Escape'})
 #                               transitions={'outcome':'Strategy'})
             #点数を取りに行く動作
-            smach.StateMachine.add('Attack', behavior_XXX.bevavior_XXX(),
+            smach.StateMachine.add('Attack', behavior_attack.behavior_attack(),
                                transitions={'outcome':'Strategy'})
             #妨害する動作
-            smach.StateMachine.add('Disturb', behavior_XXX.bevavior_XXX(),
+            smach.StateMachine.add('Disturb', behavior_disturb.bevavior_disturb(),
                                transitions={'outcome':'Strategy'})
 
 
@@ -66,14 +66,15 @@ class behavior_strategy(smach.State):
     def execute(self,userdata):
         #次の状態を決める(今は順番)
         self.dummy_counter+=1
+        print('self.dummy_counter', self.dummy_counter)
         if(self.dummy_counter>=3):
             self.dummy_counter=0
 
         if(self.dummy_counter==0):
             return 'escape'
         elif(self.dummy_counter==1):
-            return 'escape'
-#            return 'attack'
+            # return 'escape'
+            return 'attack'
         else:
             return 'disturb'
     

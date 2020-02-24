@@ -49,6 +49,10 @@
         <param name="side" value="$(arg side)" />
         <param name="rate" value="1" />
     </node>
+    <node pkg="burger_war" type="rem_time.py" name="rem_time" output="screen">
+        <param name="time" value="180" />
+        <param name="unit" value="1" />
+    </node>
     <!--<node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>-->
