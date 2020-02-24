@@ -8,6 +8,11 @@ import smach
 import smach_ros
 import behavior_XXX
 import behavior_escape
+
+
+from std_msgs.msg import Float32MultiArray
+
+
 class behavior:
     def __init__(self):
         pass
@@ -47,6 +52,16 @@ class behavior_strategy(smach.State):
         smach.State.__init__(self, outcomes=['escape','attack','disturb','end'])
         #次の状態を決めるためのダミー変数
         self.dummy_counter=0
+        # bot name 
+        robot_name=rospy.get_param('~robot_name')
+        self.name = robot_name
+        # sub
+        self.score = None
+        self.score_sub = rospy.Subscriber('/{}/score'.format(self.name), Float32MultiArray, self.score_callback)
+
+    def score_callback(self, data):
+        self.score = data
+
 
     def execute(self,userdata):
         #次の状態を決める(今は順番)
@@ -64,6 +79,7 @@ class behavior_strategy(smach.State):
     
     def strategy(self):
         pass
+
 
         
 def main(args):
