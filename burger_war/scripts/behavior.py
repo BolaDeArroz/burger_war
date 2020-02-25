@@ -7,7 +7,12 @@ import rospy
 import smach
 import smach_ros
 import behavior_XXX
-import behavior_escape
+import behavior_escape, behavior_attack, behavior_disturb
+
+
+from std_msgs.msg import Float32MultiArray
+
+
 class behavior:
     def __init__(self):
         pass
@@ -28,10 +33,10 @@ class behavior:
 #                                transitions={'outcome':'Escape'})
                                transitions={'outcome':'Strategy'})
             #点数を取りに行く動作
-            smach.StateMachine.add('Attack', behavior_XXX.bevavior_XXX(),
+            smach.StateMachine.add('Attack', behavior_attack.behavior_attack(),
                                transitions={'outcome':'Strategy'})
             #妨害する動作
-            smach.StateMachine.add('Disturb', behavior_XXX.bevavior_XXX(),
+            smach.StateMachine.add('Disturb', behavior_disturb.bevavior_disturb(),
                                transitions={'outcome':'Strategy'})
 
 
@@ -47,28 +52,36 @@ class behavior_strategy(smach.State):
         smach.State.__init__(self, outcomes=['escape','attack','disturb','end'])
         #次の状態を決めるためのダミー変数
         self.dummy_counter=0
+        # bot name 
+        robot_name=rospy.get_param('~robot_name')
+        self.name = robot_name
+        # sub
+        self.score = None
+        self.score_sub = rospy.Subscriber('/{}/score'.format(self.name), Float32MultiArray, self.score_callback)
+
+    def score_callback(self, data):
+        self.score = data
+        print('behavior score', self.score)
+
 
     def execute(self,userdata):
         #次の状態を決める(今は順番)
         self.dummy_counter+=1
+        print('self.dummy_counter', self.dummy_counter)
         if(self.dummy_counter>=3):
             self.dummy_counter=0
 
         if(self.dummy_counter==0):
             return 'escape'
         elif(self.dummy_counter==1):
-<<<<<<< Updated upstream
-            return 'escape'
-#            return 'attack'
-=======
-#            return 'escape'
+            # return 'escape'
             return 'attack'
->>>>>>> Stashed changes
         else:
             return 'disturb'
     
     def strategy(self):
         pass
+
 
         
 def main(args):

@@ -148,6 +148,24 @@ class GoToEscapePoint(smach.State):
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
 
+    def calc_escape_pos_v1(self,x,y):
+            return -x,y
+
+    def calc_escape_pos_v2(self,x,y):
+
+        #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
+        escape_pos_list=[{"x": 0.0,"y": 1.3},\
+                        {"x":-0.5,"y": 0.8},\
+                        {"x":-1.3,"y": 0.0},\
+                        {"x":-0.5,"y":-0.8},\
+                        {"x": 0.0,"y":-1.3},\
+                        {"x": 0.5,"y":-0.8},\
+                        {"x": 1.3,"y": 0.0},\
+                        {"x": 0.5,"y": 0.8}
+        ]
+        idx=(int(round(math.degrees(math.atan2(-x,y))/45))+4) % len(escape_pos_list) 
+        return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],
+
 
     def execute(self,userdata):
 
@@ -155,22 +173,25 @@ class GoToEscapePoint(smach.State):
         #逃げる位置計算
         enemy_pos=userdata.enemy_pos_in
         print("enemy_pos",enemy_pos)
-        #中心挟んで相手の反対地点に逃げる
-        escape_pos_x=-enemy_pos.x
-        escape_pos_y=-enemy_pos.y
+        #中心挟んで相手の反対地点に逃げるパティーン
+        #escape_pos_x,escape_pos_y=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
+        
+        #相手の位置によって反対側の決まった地点に逃げるパティーン
+        escape_pos_x,escape_pos_y=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
+        
         #print(escape_pos_x,escape_pos_y)
 
         #逃げる処理(ゴールはマップ中心を向くように設定)
         self.setGoal(escape_pos_y,-escape_pos_x,math.atan2(-escape_pos_x,escape_pos_y)+math.pi)
-
-        # rospy終了か、停止トピックを受け取ったらループ抜ける。
+        #TODO:ゴールが壁の中になった時の対応
+        # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
         r = rospy.Rate(5)
         while (not rospy.is_shutdown()) and \
                 self.move_base_client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,\
                                             actionlib_msgs.msg.GoalStatus.PENDING]:
 
-            #逃げる途中でストップトピックを受け取った場合
+            #逃げる途中でストップトピックを受け取った場合も抜ける
             if self.is_stop_receive == True:
                 #目的地設定キャンセル
                 self.move_base_client.cancel_goal()

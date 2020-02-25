@@ -116,9 +116,9 @@ class CommonFunction:
 
         goal.target_pose.header.frame_id = 'red_bot/map'
         goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = x/1000.0
-        goal.target_pose.pose.position.y = y/1000.0
-        q = tf.transformations.quaternion_from_euler(0, 0, yaw)
+        goal.target_pose.pose.position.x = -y/1000.0 #NOTE:暫定対策
+        goal.target_pose.pose.position.y =  x/1000.0 #NOTE:暫定対策
+        q = tf.transformations.quaternion_from_euler(0, 0, yaw+math.pi/2)#NOTE:暫定対策
 
         goal.target_pose.pose.orientation.x = q[0]
         goal.target_pose.pose.orientation.y = q[1]
