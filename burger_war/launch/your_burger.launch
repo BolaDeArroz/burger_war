@@ -53,6 +53,10 @@
         <param name="time" value="180" />
         <param name="unit" value="1" />
     </node>
+    <node pkg="burger_war" type="BDA_strategy.py" name="BDA_strategy" output="screen"> 
+        <param name="robot_name" value="$(arg robot_name)" />
+    </node>
+    
     <!--<node pkg="burger_sakuteki" type="burger_sakuteki" name="Sakuteki" output="screen"> 
         <param name="robot_name" value="$(arg robot_name)" />
     </node>-->

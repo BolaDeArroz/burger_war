@@ -7,7 +7,7 @@ import json
 import rospy
 
 
-from std_msgs.msg import Float32MultiArray
+from std_msgs.msg import Int32MultiArray
 from std_msgs.msg import String
 
 
@@ -32,27 +32,28 @@ class PubScore():
         self.war_state=None
         self.war_state_sub = rospy.Subscriber('/{}/war_state'.format(self.name), String, self.warstate_callback)
         # pub
-        self.score_pub = rospy.Publisher("score", Float32MultiArray, queue_size=1)
+        self.score_pub = rospy.Publisher("score", Int32MultiArray, queue_size=1)
 
     def warstate_callback(self, data):
-        f32m_array = Float32MultiArray()
+        _array = Int32MultiArray()
         self.war_state = data
 
         result = self.check_marker(self.war_state)
-        f32m_array.data = result
+        _array.data = result
         # print("pub score ", result)
-        self.score_pub.publish(f32m_array)
+        self.score_pub.publish(_array)
         
 
     def check_marker(self, war_state):
         """
         
         """
-        obtain_targets_list = []
+        red_list = []
+        blue_list = []
         targets_list = []
         result_list = []
         if war_state is None:
-            return obtain_targets_list
+            return red_list
         json_war_state = json.loads(war_state.data)
         for key in json_war_state:
             if key == 'targets':
@@ -61,10 +62,14 @@ class PubScore():
         for target in targets_list:
             for key in target:
                 if key == 'player' and target[key] == 'r':
-                    obtain_targets_list.append(target['name'])
+                    red_list.append(target['name'])
+                elif key == 'player' and target[key] == 'b':
+                    blue_list.append(target['name'])
         for index, name in enumerate(self.markers_name_list):
-            if name in obtain_targets_list:
+            if name in red_list:
                 result_list.append(1)
+            elif name in blue_list:
+                result_list.append(-1)
             else:
                 result_list.append(0)
         return result_list

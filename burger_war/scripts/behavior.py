@@ -10,11 +10,8 @@ import behavior_XXX
 import behavior_escape, behavior_attack, behavior_disturb
 
 
-<<<<<<< HEAD
 from std_msgs.msg import Float32MultiArray, String
-=======
-from std_msgs.msg import Float32MultiArray
->>>>>>> origin/dev_saedo
+
 
 
 class behavior:
@@ -63,33 +60,20 @@ class behavior_strategy(smach.State):
         self.strategy = None
         self.strategy_sub = rospy.Subscriber('/{}/strategy'.format(self.name), String, self.strategy_callback)
 
+
     def strategy_callback(self, data):
         self.strategy = data
-        print('behavior strategy', self.strategy)
-
 
 
     def execute(self,userdata):
+        print('execute: ', self.strategy)
+        
         if self.strategy != None:
-            return self.strategy
+            state = str(self.strategy).split('"')[1]
+            return state
         else:
             return 'attack'
 
-        """
-        #次の状態を決める(今は順番)
-        self.dummy_counter+=1
-
-        if(self.dummy_counter>=3):
-            self.dummy_counter=0
-
-        if(self.dummy_counter==0):
-            return 'escape'
-        elif(self.dummy_counter==1):
-            # return 'escape'
-            return 'attack'
-        else:
-            return 'disturb'
-        """
 
 
 
