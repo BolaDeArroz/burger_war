@@ -61,6 +61,7 @@ class behavior_strategy(smach.State):
 
     def score_callback(self, data):
         self.score = data
+        print('behavior score', self.score)
 
 
     def execute(self,userdata):
