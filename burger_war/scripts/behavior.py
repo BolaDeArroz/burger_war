@@ -10,7 +10,11 @@ import behavior_XXX
 import behavior_escape, behavior_attack, behavior_disturb
 
 
+<<<<<<< HEAD
 from std_msgs.msg import Float32MultiArray, String
+=======
+from std_msgs.msg import Float32MultiArray
+>>>>>>> origin/dev_saedo
 
 
 class behavior:
@@ -64,6 +68,7 @@ class behavior_strategy(smach.State):
         print('behavior strategy', self.strategy)
 
 
+
     def execute(self,userdata):
         if self.strategy != None:
             return self.strategy
@@ -73,7 +78,7 @@ class behavior_strategy(smach.State):
         """
         #次の状態を決める(今は順番)
         self.dummy_counter+=1
-        
+
         if(self.dummy_counter>=3):
             self.dummy_counter=0
 
@@ -85,6 +90,7 @@ class behavior_strategy(smach.State):
         else:
             return 'disturb'
         """
+
 
 
         
