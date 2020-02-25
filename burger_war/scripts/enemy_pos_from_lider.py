@@ -72,7 +72,7 @@ class enemy_pos_from_lider:
                 if(abs(enemy_pos.x) <=0.350 and abs(enemy_pos.y) <=0.350):
                     continue
                 #コーナーオブジェクトか
-                if((abs(enemy_pos.y) >=0.430 and abs(enemy_pos.y) <=0.630) and (abs(enemy_pos.y) >=0.455 and abs(enemy_pos.y) <=0.605)):
+                if((abs(enemy_pos.y) >=0.420 and abs(enemy_pos.y) <=0.640) and (abs(enemy_pos.y) >=0.445 and abs(enemy_pos.y) <=0.615)):
                     continue
 
                 self.marker.pose.position=obs.center

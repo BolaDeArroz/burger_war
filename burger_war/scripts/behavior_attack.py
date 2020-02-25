@@ -114,11 +114,11 @@ class CommonFunction:
 
         goal = MoveBaseGoal()
 
-        goal.target_pose.header.frame_id = 'map'
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = x
-        goal.target_pose.pose.position.y = y
 
+        goal.target_pose.header.frame_id = 'red_bot/map'
+        goal.target_pose.header.stamp = rospy.Time.now()
+        goal.target_pose.pose.position.x = x/1000.0
+        goal.target_pose.pose.position.y = y/1000.0
         q = tf.transformations.quaternion_from_euler(0, 0, yaw)
 
         goal.target_pose.pose.orientation.x = q[0]
@@ -201,6 +201,7 @@ class Moving(smach.State):
         self.func.reset()
         self.func.set_goal(*(POINTS[userdata.target]))
 
+        print(POINTS[userdata.target])#debug用TODO:あとで消す
         while not rospy.is_shutdown():
             if self.func.check_stop():
                 return 'end'

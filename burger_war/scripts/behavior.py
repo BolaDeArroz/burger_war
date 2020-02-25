@@ -30,8 +30,8 @@ class behavior:
                                             })
             #逃げる動作
             smach.StateMachine.add('Escape', behavior_escape.bevavior_escape(),
-                               transitions={'outcome':'Escape'})
-#                               transitions={'outcome':'Strategy'})
+#                                transitions={'outcome':'Escape'})
+                               transitions={'outcome':'Strategy'})
             #点数を取りに行く動作
             smach.StateMachine.add('Attack', behavior_attack.behavior_attack(),
                                transitions={'outcome':'Strategy'})
