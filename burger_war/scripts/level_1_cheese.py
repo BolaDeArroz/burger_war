@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# enemy.py
+# level_1_cheese.py
 # write by yamaguchi takuya @dashimaki360
 ## GO and Back only
 
@@ -13,7 +13,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
 
-class SioBot():
+class CheeseBurger():
     def __init__(self, bot_name):
         # bot name 
         self.name = bot_name
@@ -100,6 +100,6 @@ class SioBot():
 
 if __name__ == '__main__':
     rospy.init_node('enemy')
-    bot = SioBot('sio_bot')
+    bot = CheeseBurger('cheese_burger')
     bot.strategy()
 
