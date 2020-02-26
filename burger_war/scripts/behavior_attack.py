@@ -115,7 +115,7 @@ class CommonFunction:
         goal = MoveBaseGoal()
 
 
-        goal.target_pose.header.frame_id = 'red_bot/map'
+        goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = -y/1000.0 #NOTE:暫定対策
         goal.target_pose.pose.position.y =  x/1000.0 #NOTE:暫定対策

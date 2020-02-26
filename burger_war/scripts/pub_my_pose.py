@@ -10,7 +10,7 @@ import tf
 class pub_my_pose:
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
 
         self.tf_listener=tf.TransformListener()

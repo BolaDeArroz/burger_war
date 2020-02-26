@@ -26,7 +26,7 @@ from obstacle_detector.msg import Obstacles
 class enemy_pos_from_lider:
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
 
         # /Obstaclesトピックサブスクライブ用

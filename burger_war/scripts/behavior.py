@@ -54,7 +54,7 @@ class behavior_strategy(smach.State):
         #次の状態を決めるためのダミー変数
         self.dummy_counter=0
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
         # sub
         self.strategy = None

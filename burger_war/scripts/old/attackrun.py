@@ -35,7 +35,7 @@ from calc_motion_planning import rotation_operate, check_possession_marker
 class AttackBot():
     def __init__(self):
         # bot name 
-        # robot_name=rospy.get_param('~robot_name')
+        # robot_name=''
         robot_name = ''
         self.name = robot_name
         

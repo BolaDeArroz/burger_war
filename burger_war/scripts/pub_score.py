@@ -15,7 +15,7 @@ from std_msgs.msg import String
 class PubScore():
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
         # markers name: order is decided by zyali's board
         self.markers_name_list = [

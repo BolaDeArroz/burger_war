@@ -17,7 +17,7 @@ from burger_war.msg import MyPose
 class BDA_strategy():
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
         self.all_state_list = ['attack', 'escape', 'disturb']
         # sub
@@ -157,9 +157,11 @@ class BDA_strategy():
             if preserve_count > 0:
                 preserve_count = preserve_count-1
                 print('preserve_count', preserve_count)
+                if preserve_count == 0:
+                    self.pub_state_stop.publish(True)
             if state != prev_state and preserve_count <= 0:
                 if state == self.all_state_list[1]:
-                    preserve_count = 50
+                    preserve_count = 70
                 self.pub_state_stop.publish(True)
             self.pub_strategy.publish(state)
             r.sleep()
