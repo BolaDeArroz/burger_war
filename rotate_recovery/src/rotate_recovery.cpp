@@ -111,16 +111,7 @@ void RotateRecovery::runBehavior(){
   ros::Publisher vel_pub = n.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
 
-  
-  //敵発見時に処理抜ける用
-  ros::NodeHandle origin_nh("~");
-  std::string param = "";
-  origin_nh.getParam("robot_name", param);
-  // callback関数の登録
-  ros::Subscriber sub_ = origin_nh.subscribe("/" + param + "/array", 10, &detectEnemyCallback);
-  is_enemy_detected=false;
-  //std::string aaa="aaaaaaaaaaaaaaaaa."+"/" + param + "/array";
-  ROS_WARN("aaaaaaa:%s",param.c_str());
+ 
 
   tf::Stamped<tf::Pose> global_pose;
   local_costmap_->getRobotPose(global_pose);
@@ -130,7 +121,9 @@ void RotateRecovery::runBehavior(){
   bool got_180 = false;
 
   double start_offset = 0 - angles::normalize_angle(tf::getYaw(global_pose.getRotation()));
-  while(n.ok() && is_enemy_detected==false){
+  while(n.ok()){
+
+
     local_costmap_->getRobotPose(global_pose);
 
     double norm_angle = angles::normalize_angle(tf::getYaw(global_pose.getRotation()));

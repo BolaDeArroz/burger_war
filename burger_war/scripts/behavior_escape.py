@@ -165,15 +165,16 @@ class GoToEscapePoint(smach.State):
         #print(escape_pos_x,escape_pos_y)
 
         #ゴール設定
-        my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
+        #my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
+        #DEBUG:
+        my_move_base.setGoal(self.move_base_client,-0.45,-0.45,escape_yaw)
         
-        #TODO:ゴールが壁の中になった時の対応
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
         r = rospy.Rate(5)
         while (not rospy.is_shutdown()) and \
-                self.move_base_client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,\
-                                            actionlib_msgs.msg.GoalStatus.PENDING]:
+                self.move_base_client.get_state() in [  actionlib_msgs.msg.GoalStatus.ACTIVE,\
+                                                        actionlib_msgs.msg.GoalStatus.PENDING]:
 
             #逃げる途中でストップトピックを受け取った場合も抜ける
             if self.is_stop_receive == True:
@@ -186,8 +187,11 @@ class GoToEscapePoint(smach.State):
                 self.is_stop_receive=False
                 return 'is_receiveStopSig'
             
-            r.sleep()   
+            #TODO:ゴールが壁の中になった時の対応
+
+            r.sleep()
  
+        
         #目的地についた場合
         return 'is_Gone'
 
