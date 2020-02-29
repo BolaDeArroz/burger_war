@@ -12,8 +12,9 @@ import actionlib_msgs
 
 from std_msgs.msg import Bool,Float32MultiArray
 from geometry_msgs.msg import Point,Twist
-
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+
+import my_move_base
 
 class bevavior_escape(smach.State):
     def __init__(self):
@@ -108,26 +109,6 @@ class CalcEnemyPos(smach.State):
 
 class GoToEscapePoint(smach.State):
 
-    def setGoal(self,x,y,yaw):
-        print(x,y,yaw)
-        self.move_base_client.wait_for_server()
-
-        goal = MoveBaseGoal()
-        goal.target_pose.header.frame_id = self.name + "/map"
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = x
-        goal.target_pose.pose.position.y = y
-
-        # Euler to Quartanion
-        q=tf.transformations.quaternion_from_euler(0,0,yaw)        
-        goal.target_pose.pose.orientation.x = q[0]
-        goal.target_pose.pose.orientation.y = q[1]
-        goal.target_pose.pose.orientation.z = q[2]
-        goal.target_pose.pose.orientation.w = q[3]
- 
-        self.move_base_client.send_goal(goal)
-
-
     def stop_callback(self,data):
         self.is_stop_receive=True
 
@@ -179,10 +160,13 @@ class GoToEscapePoint(smach.State):
         #相手の位置によって反対側の決まった地点に逃げるパティーン
         escape_pos_x,escape_pos_y=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
         
+        #ゴール時の方向はマップ中心を向く用に変更
+        escape_yaw=math.atan2(escape_pos_y,escape_pos_x)-math.pi
         #print(escape_pos_x,escape_pos_y)
 
-        #逃げる処理(ゴールはマップ中心を向くように設定)
-        self.setGoal(escape_pos_y,-escape_pos_x,math.atan2(-escape_pos_x,escape_pos_y)+math.pi)
+        #ゴール設定
+        my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
+        
         #TODO:ゴールが壁の中になった時の対応
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
