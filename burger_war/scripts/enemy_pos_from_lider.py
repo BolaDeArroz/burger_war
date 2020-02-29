@@ -63,12 +63,16 @@ class enemy_pos_from_lider:
                 enemy_pos.x=-obs.center.y
                 enemy_pos.y= obs.center.x
                 
+
+                #敵とオブジェクトを見分けるマージン[m]。値が大きいほど、オブジェクトだと判定するエリアが大きくなる。
+                judge_enemy_mergin=0.0
                 #フィルタリング
                 #センターオブジェクトか
-                if(abs(enemy_pos.x) <=0.350 and abs(enemy_pos.y) <=0.350):
+                if(abs(enemy_pos.x) <=0.350+judge_enemy_mergin and abs(enemy_pos.y) <=0.350+judge_enemy_mergin):
                     continue
                 #コーナーオブジェクトか
-                if((abs(enemy_pos.y) >=0.420 and abs(enemy_pos.y) <=0.640) and (abs(enemy_pos.y) >=0.445 and abs(enemy_pos.y) <=0.615)):
+                if((abs(enemy_pos.y) >=0.420-judge_enemy_mergin and abs(enemy_pos.y) <=0.640+judge_enemy_mergin) and \
+                   (abs(enemy_pos.y) >=0.445-judge_enemy_mergin and abs(enemy_pos.y) <=0.615+judge_enemy_mergin)):
                     continue
 
                 self.marker.pose.position=obs.center
