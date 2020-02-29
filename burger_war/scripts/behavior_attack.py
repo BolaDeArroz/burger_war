@@ -114,7 +114,8 @@ class CommonFunction:
 
         goal = MoveBaseGoal()
 
-        goal.target_pose.header.frame_id = 'red_bot/map'
+
+        goal.target_pose.header.frame_id = 'map'
         goal.target_pose.header.stamp = rospy.Time.now()
         goal.target_pose.pose.position.x = -y/1000.0 #NOTE:暫定対策
         goal.target_pose.pose.position.y =  x/1000.0 #NOTE:暫定対策
@@ -199,6 +200,7 @@ class Moving(smach.State):
 
         self.func.reset()
         self.func.set_goal(*(POINTS[userdata.target]))
+
         print(POINTS[userdata.target])#debug用TODO:あとで消す
         while not rospy.is_shutdown():
             if self.func.check_stop():

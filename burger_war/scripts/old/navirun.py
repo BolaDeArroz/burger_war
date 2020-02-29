@@ -32,7 +32,8 @@ import copy
 class NaviBot():
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        # robot_name=''
+        robot_name = '' 
         self.name = robot_name
         robot_side=""#rospy.get_param('~side')#TODO launchファイル更新したら書き換え
         if robot_side:

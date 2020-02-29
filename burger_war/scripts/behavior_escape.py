@@ -18,7 +18,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 class bevavior_escape(smach.State):
     def __init__(self):
         #robot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
        
         smach.State.__init__(self, outcomes=['outcome'])
@@ -69,7 +69,7 @@ class CalcEnemyPos(smach.State):
         smach.State.__init__(self,  outcomes=['is_EnemyFound','is_receiveStopSig'],
                                     output_keys=['enemy_pos_out'])
 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
         #停止トピックを受け取るための定義。         
         self.sub_stop = rospy.Subscriber('/{}/state_stop'.format(self.name), Bool, self.stop_callback)
@@ -136,7 +136,7 @@ class GoToEscapePoint(smach.State):
         smach.State.__init__(self,  outcomes=['is_Gone','is_receiveStopSig'],
                                     input_keys=['enemy_pos_in'])
 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
 
         #停止トピックを受け取るための定義。         

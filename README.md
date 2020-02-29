@@ -58,11 +58,15 @@ cd ~/catkin_ws/src
 git clone https://github.com/OneNightROBOCON/burger_war
 ```
 
-このリポジトリのフィールド用のGAZEBOモデルにPATHを通す
+このリポジトリのフィールド用のGAZEBOモデルにPATHを通す。
+
+Turtlebot3のモデル名の指定を環境変数に追加。
 ```
-export GAZEBO_MODEL_PATH=$HOME/catkin_ws/src/burger_war/burger_war/models/
+echo "export GAZEBO_MODEL_PATH=$HOME/catkin_ws/src/burger_war/burger_war/models/" >> ~/.bashrc
+echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc
+source ~/.bashrc
 ```
-シェルごとに毎回実行するのは面倒なので上記は`~/.bashrc`に書いておくと便利です｡
+
 
 ### 3. 依存ライブラリのインストール
 - pip : pythonのパッケージ管理ツール
@@ -121,7 +125,7 @@ bash scripts/start.sh
 
 審判サーバーを立ち上げずにシミュレータとロボットのみ立ち上げる場合
 ```
-roslaunch burger_war　setup_sim.launch
+roslaunch burger_war setup_sim.launch
 ```
 フィールドとロボットが立ち上がったら
 別のターミナルで下記ロボット動作スクリプトを実行
@@ -178,15 +182,20 @@ roslaunch burger_war your_burger.launch side:=b
 そちらのREADMEを参照ください
 
 ## ファイル構成
-各ディレクトリの役割と、特に参加者に重要なファイルについての説明
 
-下記のようなディレクトリ構成になっています。  
+ソフト全体の構成は下記のようになっています．
+白の部分はすでにこのリポジトリに含まれており，参加者はオレンジの部分を開発します．
+![soft_map](https://user-images.githubusercontent.com/17049327/73993084-9448ae00-4994-11ea-9d86-ac3c94936845.png)
+
+リポジトリ全体は下記のようなディレクトリ構成になっています。  
 
 ```
 burger_war
 ├── burger_war
 │   ├── CMakeLists.txt
 │   ├── launch  launchファイルの置き場
+│   │   ├── your_burger.launch  ロボットの走行ノードを起動するlaunchファイル
+│   │   ├── setup.launch  実機でロボットを起動、初期化するlaunchファイル
 │   │   ├── sim_robot_run.launch  シミュレータ上で２台のロボットを動かすlaunchファイル
 │   │   └─ setup_sim.launch  Gazeboシミュレータ上でフィールドの生成ロボットを起動、初期化するlaunchファイル
 │   │

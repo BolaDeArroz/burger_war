@@ -21,7 +21,7 @@ from image_function import Normalization, detect_enemy_robot
 class EnemyFinderFromCamera():
     def __init__(self):
         # bot name 
-        robot_name=rospy.get_param('~robot_name')
+        robot_name=''
         self.name = robot_name
         # camera info
         self.horizontal_angle = 60

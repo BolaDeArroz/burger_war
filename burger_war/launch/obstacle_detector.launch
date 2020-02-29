@@ -1,6 +1,5 @@
 <launch>
 
-  <arg name="robot_name" default=""/>
 
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
     <param name="active"               value="true"/>
@@ -17,12 +16,12 @@
     <param name="max_circle_radius"    value="0.15"/>
     <param name="radius_enlargement"   value="0.0"/>
 
-    <param name="frame_id"             value="$(arg robot_name)/map"/>
+    <param name="frame_id"             value="map"/>
   </node>
 
   <node name="obstacle_tracker" pkg="obstacle_detector" type="obstacle_tracker_node">
     <param name="loop_rate"         value="15"/>
-    <param name="frame_id"          value="$(arg robot_name)/map"/>
+    <param name="frame_id"          value="map"/>
     <remap from="tracked_obstacles" to="obstacles"/>
   </node>
 
