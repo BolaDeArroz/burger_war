@@ -109,6 +109,7 @@ class CalcEnemyPos(smach.State):
 class GoToEscapePoint(smach.State):
 
     def setGoal(self,x,y,yaw):
+        print(x,y,yaw)
         self.move_base_client.wait_for_server()
 
         goal = MoveBaseGoal()
@@ -149,10 +150,9 @@ class GoToEscapePoint(smach.State):
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
 
     def calc_escape_pos_v1(self,x,y):
-            return -x,y
+            return -x,-y
 
     def calc_escape_pos_v2(self,x,y):
-
         #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
         escape_pos_list=[{"x": 0.0,"y": 1.3},\
                         {"x":-0.5,"y": 0.8},\
