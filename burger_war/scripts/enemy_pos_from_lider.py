@@ -38,19 +38,15 @@ class enemy_pos_from_lider:
 
  
         self.marker=Marker()
-        self.marker.header.frame_id="/"+self.name+"/map"
+        self.marker.header.frame_id="map"
         self.marker.ns = "basic_shapes"
         self.marker.id = 0
-        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.2
+        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.25
         self.marker.color.a=1.0
         self.marker.color.r=1.0
         self.marker.type=Marker.CUBE
         self.marker.action = Marker.ADD
         self.enemy_marker_pub = rospy.Publisher('enemy_pos_from_lider_marker',Marker,queue_size=1)
-
-        #敵位置マップ用定数定義
-        self._MAP_OFFSET_X=-1.6770000
-        self._MAP_OFFSET_Y=-1.6970000
 
 
     def obstacle_callback(self, data):
