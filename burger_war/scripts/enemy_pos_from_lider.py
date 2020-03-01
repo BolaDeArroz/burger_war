@@ -75,7 +75,7 @@ class enemy_pos_from_lider:
                    (abs(enemy_pos.y) >=0.445-judge_enemy_mergin and abs(enemy_pos.y) <=0.615+judge_enemy_mergin)):
                     continue
                 #壁か
-                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.500-judge_enemy_mergin):
+                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.650-judge_enemy_mergin):
                     continue
 
                 self.marker.pose.position=obs.center
