@@ -141,6 +141,7 @@ class Selecting(smach.State):
         smach.State.__init__(
                 self,
                 outcomes=['success', 'end'],
+                input_keys=['target'],
                 output_keys=['target'])
 
         self.func = func
@@ -191,7 +192,7 @@ class Selecting(smach.State):
                 costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
 
         for i, _ in enumerate(costs):
-            costs[i] += distance(userdata, POINTS[i], my) * K_MY_POSE
+            costs[i] += self.distance(userdata, POINTS[i], my) * K_MY_POSE
 
         cost = min(costs)
 
