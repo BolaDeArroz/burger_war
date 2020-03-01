@@ -12,9 +12,9 @@ import actionlib_msgs
 
 from std_msgs.msg import Bool,Float32MultiArray
 from geometry_msgs.msg import Point,Twist
-
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
+import my_move_base
 class bevavior_escape(smach.State):
     def __init__(self):
         #robot name 
@@ -108,6 +108,7 @@ class CalcEnemyPos(smach.State):
 
 class GoToEscapePoint(smach.State):
 
+<<<<<<< HEAD
     def setGoal(self,x,y,yaw):
         self.move_base_client.wait_for_server()
 
@@ -127,6 +128,8 @@ class GoToEscapePoint(smach.State):
         self.move_base_client.send_goal(goal)
 
 
+=======
+>>>>>>> origin/dev_saedo
     def stop_callback(self,data):
         self.is_stop_receive=True
 
@@ -149,10 +152,16 @@ class GoToEscapePoint(smach.State):
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
 
     def calc_escape_pos_v1(self,x,y):
+<<<<<<< HEAD
             return -x,y
 
     def calc_escape_pos_v2(self,x,y):
 
+=======
+            return -x,-y
+
+    def calc_escape_pos_v2(self,x,y):
+>>>>>>> origin/dev_saedo
         #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
         escape_pos_list=[{"x": 0.0,"y": 1.3},\
                         {"x":-0.5,"y": 0.8},\
@@ -179,17 +188,34 @@ class GoToEscapePoint(smach.State):
         #相手の位置によって反対側の決まった地点に逃げるパティーン
         escape_pos_x,escape_pos_y=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
         
+<<<<<<< HEAD
         #print(escape_pos_x,escape_pos_y)
 
         #逃げる処理(ゴールはマップ中心を向くように設定)
         self.setGoal(escape_pos_y,-escape_pos_x,math.atan2(-escape_pos_x,escape_pos_y)+math.pi)
         #TODO:ゴールが壁の中になった時の対応
+=======
+        #ゴール時の方向はマップ中心を向く用に変更
+        escape_yaw=math.atan2(escape_pos_y,escape_pos_x)-math.pi
+        #print(escape_pos_x,escape_pos_y)
+
+        #ゴール設定
+        my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
+        #DEBUG:
+        #my_move_base.setGoal(self.move_base_client,-0.45,-0.45,escape_yaw)
+        
+>>>>>>> origin/dev_saedo
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
         r = rospy.Rate(5)
         while (not rospy.is_shutdown()) and \
+<<<<<<< HEAD
                 self.move_base_client.get_state() in [actionlib_msgs.msg.GoalStatus.ACTIVE,\
                                             actionlib_msgs.msg.GoalStatus.PENDING]:
+=======
+                self.move_base_client.get_state() in [  actionlib_msgs.msg.GoalStatus.ACTIVE,\
+                                                        actionlib_msgs.msg.GoalStatus.PENDING]:
+>>>>>>> origin/dev_saedo
 
             #逃げる途中でストップトピックを受け取った場合も抜ける
             if self.is_stop_receive == True:
@@ -202,8 +228,16 @@ class GoToEscapePoint(smach.State):
                 self.is_stop_receive=False
                 return 'is_receiveStopSig'
             
+<<<<<<< HEAD
             r.sleep()   
  
+=======
+            #TODO:ゴールが壁の中になった時の対応
+
+            r.sleep()
+ 
+        
+>>>>>>> origin/dev_saedo
         #目的地についた場合
         return 'is_Gone'
 

@@ -1,6 +1,7 @@
 <launch>
 
 
+<!--# RESPECT @TeamRabbit-->
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
     <param name="active"               value="true"/>
     <param name="use_scan"             value="true"/>

@@ -38,19 +38,16 @@ class enemy_pos_from_lider:
 
  
         self.marker=Marker()
-        self.marker.header.frame_id="/"+self.name+"/map"
+
+        self.marker.header.frame_id="map"
         self.marker.ns = "basic_shapes"
         self.marker.id = 0
-        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.2
+        self.marker.scale.x=self.marker.scale.y=self.marker.scale.z=0.25
         self.marker.color.a=1.0
         self.marker.color.r=1.0
         self.marker.type=Marker.CUBE
         self.marker.action = Marker.ADD
         self.enemy_marker_pub = rospy.Publisher('enemy_pos_from_lider_marker',Marker,queue_size=1)
-
-        #敵位置マップ用定数定義
-        self._MAP_OFFSET_X=-1.6770000
-        self._MAP_OFFSET_Y=-1.6970000
 
 
     def obstacle_callback(self, data):
@@ -67,12 +64,20 @@ class enemy_pos_from_lider:
                 enemy_pos.x=-obs.center.y
                 enemy_pos.y= obs.center.x
                 
+
+
+                #敵とオブジェクトを見分けるマージン[m]。値が大きいほど、オブジェクトだと判定するエリアが大きくなる。
+                judge_enemy_mergin=0.0
                 #フィルタリング
                 #センターオブジェクトか
-                if(abs(enemy_pos.x) <=0.350 and abs(enemy_pos.y) <=0.350):
+                if(abs(enemy_pos.x) <=0.350+judge_enemy_mergin and abs(enemy_pos.y) <=0.350+judge_enemy_mergin):
                     continue
                 #コーナーオブジェクトか
-                if((abs(enemy_pos.y) >=0.420 and abs(enemy_pos.y) <=0.640) and (abs(enemy_pos.y) >=0.445 and abs(enemy_pos.y) <=0.615)):
+                if((abs(enemy_pos.y) >=0.420-judge_enemy_mergin and abs(enemy_pos.y) <=0.640+judge_enemy_mergin) and \
+                   (abs(enemy_pos.y) >=0.445-judge_enemy_mergin and abs(enemy_pos.y) <=0.615+judge_enemy_mergin)):
+                    continue
+                #壁か
+                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.500-judge_enemy_mergin):
                     continue
 
                 self.marker.pose.position=obs.center

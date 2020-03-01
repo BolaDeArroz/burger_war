@@ -13,6 +13,9 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
 
+import my_move_base
+
+
 class behavior_attack(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['outcome'])
@@ -110,6 +113,7 @@ class CommonFunction:
         return self.client.get_state()
 
     def set_goal(self, x, y, yaw):
+<<<<<<< HEAD
         self.client.wait_for_server()
 
         goal = MoveBaseGoal()
@@ -128,6 +132,13 @@ class CommonFunction:
 
         self.client.send_goal(goal)
 
+=======
+        #NOTE:この中の処理は、my_move_base関数の中に移動しました。(木山)
+        my_move_base.setGoal(self.client,x/1000.0,y/1000.0,yaw)
+
+
+
+>>>>>>> origin/dev_saedo
     def cancel_goal(self):
         self.client.cancel_goal()
 
@@ -201,7 +212,10 @@ class Moving(smach.State):
         self.func.reset()
         self.func.set_goal(*(POINTS[userdata.target]))
 
+<<<<<<< HEAD
         print(POINTS[userdata.target])#debug用TODO:あとで消す
+=======
+>>>>>>> origin/dev_saedo
         while not rospy.is_shutdown():
             if self.func.check_stop():
                 return 'end'
