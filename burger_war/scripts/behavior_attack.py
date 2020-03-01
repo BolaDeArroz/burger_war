@@ -71,7 +71,7 @@ class CommonFunction:
         rospy.Subscriber(
                 'state_stop', Bool, self.stop_callback)
         rospy.Subscriber(
-                'pub_score', Int32MultiArray, self.score_callback)
+                'score', Int32MultiArray, self.score_callback)
         rospy.Subscriber(
                 'enemy_pos_from_score', Float32MultiArray, self.epfs_callback)
         rospy.Subscriber(
