@@ -7,10 +7,14 @@ import json
 import rospy
 import math
 
+import threading
+import smach_ros
 
+from smach_msgs.msg import SmachContainerStatus,SmachContainerInitialStatusCmd,SmachContainerStructure
 from std_msgs.msg import Float32MultiArray, Time, String, Bool, Int32MultiArray
 from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
+
 
 
 
@@ -20,6 +24,22 @@ class BDA_strategy():
         robot_name=''
         self.name = robot_name
         self.all_state_list = ['attack', 'escape', 'disturb']
+
+        # Message subscribers
+        self._structure_subs = {}
+        # smach introspection client
+        self._client = smach_ros.IntrospectionClient()
+        self._containers= {}
+        self._selected_paths = []
+
+        # Message subscribers
+        self._structure_subs = {}
+        self._status_subs = {}
+        # Start a thread in the background to update the server list
+        self._keep_running = True
+        self._server_list_thread = threading.Thread(target=self._update_server_list)
+        self._server_list_thread.start()
+
         # sub
         """
         use almost all the our publish data
@@ -29,6 +49,8 @@ class BDA_strategy():
         - rem_time
         - my_pose
         - enemy_pose_from_camera
+        present status
+        - 
         """
         self.sub_enemy_pos_from_score = rospy.Subscriber('/{}/enemy_pos_from_score'.format(self.name), Float32MultiArray, self.enemy_pos_from_score_callback)
         self.enemy_pos_from_score=Float32MultiArray()
@@ -47,6 +69,8 @@ class BDA_strategy():
 
         self.sub_enemy_pose_from_camera = rospy.Subscriber('/{}/enemy_pose_from_camera'.format(self.name), MyPose, self.enemy_pose_from_camera_callback)
         self.enemy_pose_from_camera = MyPose()
+
+        self.current_state = None
 
         # pub
         self.pub_strategy = rospy.Publisher('/{}/strategy'.format(self.name), String, queue_size=1)
@@ -71,6 +95,15 @@ class BDA_strategy():
     
     def rem_time_callback(self, data):
         self.rem_time = data
+
+    def state_callback(self, data):
+        """
+        Process status messages.
+        """
+        if data.path == '/SM_ROOT':
+            self.current_state = data.active_states
+            print('current state', self.current_state[0])
+
 
     def calc_both_points(self):
         my_points = 0
@@ -122,6 +155,7 @@ class BDA_strategy():
             print('missing calc_distance_enemy_me: ', e)
         return _dis
 
+
     def evaluate_war_situation(self):
         result = self.all_state_list[0]
         # first priority
@@ -137,38 +171,82 @@ class BDA_strategy():
         elif enemy_points - my_points > 5:
             result = self.all_state_list[0]
 
-        if self.calc_distance_enemy_me() < 0.8:
+        if self.calc_distance_enemy_me() < 1.0:
             result = self.all_state_list[1]
 
         return result
-
-
-
 
     def strategy_run(self):
         r=rospy.Rate(5)
         state = ''
         prev_state = ''
+        prev_real_state = 'Attack'
+        stop_send_result = False
         preserve_count = 0
         while not rospy.is_shutdown():
             prev_state = state
+            
             state = self.evaluate_war_situation()
 
+            # change state
             if preserve_count > 0:
                 preserve_count = preserve_count-1
                 print('preserve_count', preserve_count)
                 if preserve_count == 0:
                     self.pub_state_stop.publish(True)
+            
+            # stop topic
             if state != prev_state and preserve_count <= 0:
                 if state == self.all_state_list[1]:
                     preserve_count = 70
                 self.pub_state_stop.publish(True)
+                stop_send_result = True
+            if stop_send_result == True:
+                # resend
+                if prev_real_state != self.current_state:
+                    self.pub_state_stop.publish(True)
+                else:
+                    stop_send_result = False
+            prev_real_state = self.current_state
+            # change state topic
             self.pub_strategy.publish(state)
             r.sleep()
+
+
+
+
+
+
+
+
+
+    def _update_server_list(self):
+        """
+        Update the list of known SMACH introspection servers
+        """
+        while self._keep_running:
+            # Update the server list
+            server_names = self._client.get_servers()
+            new_server_names = [sn for sn in server_names if sn not in self._status_subs]
+
+            # Create subscribers for new servers
+            for server_name in new_server_names:
+                self._status_subs[server_name] = rospy.Subscriber(
+                        server_name+smach_ros.introspection.STATUS_TOPIC,
+                        SmachContainerStatus,
+                        callback = self.state_callback,
+                        queue_size=50)
+            # This doesn't need to happen very often
+            rospy.sleep(1.0)
         
+
+
 
 
 if __name__ == "__main__":
     rospy.init_node("BDA_strategy")
     bda_strategy = BDA_strategy()
     bda_strategy.strategy_run()
+
+
+
