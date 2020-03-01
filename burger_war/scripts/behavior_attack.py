@@ -185,7 +185,8 @@ class Selecting(smach.State):
         my = self.func.check_my_pose()
 
         for i in self.func.check_score():
-            costs[i] += K_MY_MARKER
+            if i < len(costs):
+                costs[i] += K_MY_MARKER
 
         for i, _ in enumerate(costs):
             for j in NEAR_CELLS[i]:
