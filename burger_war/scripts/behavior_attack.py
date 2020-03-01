@@ -111,7 +111,7 @@ class CommonFunction:
         return self.client.get_state()
 
     def set_goal(self, x, y, yaw):
-        #この中の処理は、my_move_base関数の中に移動しました。(木山)
+        #NOTE:この中の処理は、my_move_base関数の中に移動しました。(木山)
         my_move_base.setGoal(self.client,x/1000.0,y/1000.0,yaw)
 
 
