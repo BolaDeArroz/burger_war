@@ -174,14 +174,14 @@ class Selecting(smach.State):
         return None
 
     def select(self, userdata):
-        score = self.func.check_score()
         mypos = self.func.check_my_pose()
         enemy = self.func.check_enemy_pos_from_score()
 
         costs = [x.bcost for x in MK_INFOS]
 
-        for i in [x for x in score if x < len(MK_INFOS)]:
-            costs[i] += K_MY_MARKER
+        for i in self.func.check_score():
+            if i < len(MK_INFOS):
+                costs[i] += K_MY_MARKER
 
         for i in range(len(costs)):
             costs[i] += self.distance(MK_INFOS[i].point, mypos) * K_MY_POSE
@@ -332,17 +332,17 @@ K_MY_POSE = 0.01
 
 MK_INFOS = eval("""
 [
-        MkInfo((-530,  760, -math.pi / 2), 0.00, [ 2,  3]),
-        MkInfo(( 530,  760, -math.pi / 2), 0.00, [ 4,  5]),
-        MkInfo((-530,  300,  math.pi / 2), 0.25, [ 7,  8]),
-        MkInfo(( 530,  300,  math.pi / 2), 0.25, [ 9, 10]),
-        MkInfo((   0,  300, -math.pi / 2), 0.50, [ 8,  9]),
-        MkInfo((-300,    0,  0),           0.50, [ 8, 14]),
-        MkInfo(( 300,    0,  math.pi),     0.50, [ 9, 15]),
-        MkInfo((   0, -300,  math.pi / 2), 0.50, [14, 15]),
-        MkInfo((-530, -300, -math.pi / 2), 0.25, [13, 14]),
-        MkInfo(( 530, -300, -math.pi / 2), 0.25, [15, 16]),
-        MkInfo((-530, -760,  math.pi / 2), 0.00, [18, 19]),
-        MkInfo(( 530, -760,  math.pi / 2), 0.00, [20, 21])
+        MkInfo((-530,  800, -math.pi / 2), 0.00, [ 2,  3]),
+        MkInfo(( 530,  800, -math.pi / 2), 0.00, [ 4,  5]),
+        MkInfo((-530,  260,  math.pi / 2), 0.25, [ 7,  8]),
+        MkInfo(( 530,  260,  math.pi / 2), 0.25, [ 9, 10]),
+        MkInfo((   0,  340, -math.pi / 2), 0.50, [ 8,  9]),
+        MkInfo((-340,    0,  0),           0.50, [ 8, 14]),
+        MkInfo(( 340,    0,  math.pi),     0.50, [ 9, 15]),
+        MkInfo((   0, -340,  math.pi / 2), 0.50, [14, 15]),
+        MkInfo((-530, -260, -math.pi / 2), 0.25, [13, 14]),
+        MkInfo(( 530, -260, -math.pi / 2), 0.25, [15, 16]),
+        MkInfo((-530, -800,  math.pi / 2), 0.00, [18, 19]),
+        MkInfo(( 530, -800,  math.pi / 2), 0.00, [20, 21])
 ]
 """)
