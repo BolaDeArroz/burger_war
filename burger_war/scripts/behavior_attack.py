@@ -9,10 +9,15 @@ import smach
 import smach_ros
 import tf
 
+from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
+
 import my_move_base
+
+
+from burger_war.msg import MyPose
 
 class behavior_attack(smach.State):
     def __init__(self):
@@ -24,19 +29,19 @@ class behavior_attack(smach.State):
             func = CommonFunction()
 
             smach.StateMachine.add('Selecting', Selecting(func), transitions={
-                'success': 'Moving',
-                'end': 'outcome'
+                    'success': 'Moving',
+                    'end': 'outcome'
             })
             smach.StateMachine.add('Moving', Moving(func), transitions={
-                'success': 'Reading',
-                'fail': 'Selecting',
-                'read': 'Selecting',
-                'end': 'outcome'
+                    'success': 'Reading',
+                    'fail': 'Selecting',
+                    'read': 'Selecting',
+                    'end': 'outcome'
             })
             smach.StateMachine.add('Reading', Reading(func), transitions={
-                'success': 'Selecting',
-                'timeout': 'Selecting',
-                'end': 'outcome'
+                    'success': 'Selecting',
+                    'timeout': 'Selecting',
+                    'end': 'outcome'
             })
 
         sis = smach_ros.IntrospectionServer(
@@ -58,46 +63,47 @@ class CommonFunction:
 
         self.enemy_pos_from_score = []
 
+        self.my_pose = None
+
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
+        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+
         rospy.Subscriber(
-                'state_stop',
-                Bool,
-                self.stop_callback)
+                'state_stop', Bool, self.stop_callback)
         rospy.Subscriber(
-                'pub_score',
-                Int32MultiArray,
-                self.score_callback)
+                'pub_score', Int32MultiArray, self.score_callback)
         rospy.Subscriber(
-                'enemy_pos_from_score',
-                Float32MultiArray,
-                self.enemy_pos_from_score_callback)
+                'enemy_pos_from_score', Float32MultiArray, self.epfs_callback)
+        rospy.Subscriber(
+                'my_pose', MyPose, self.my_pose_callback)
 
     def reset(self):
         self.is_stop_receive = False
 
+        self.cancel_goal()
+        self.pub_vel(0, 0, 0)
+
     def is_data_exists(self):
-        # TODO: pub_scoreが実装されたら修正
-        # return (len(self.score) > 0 and
-        #         len(self.enemy_pos_from_score) > 0)
-        return (len(self.enemy_pos_from_score) > 0)
+        return (len(self.score) > 0 and
+                len(self.enemy_pos_from_score) > 0 and
+                self.my_pose is not None)
 
     def stop_callback(self, data):
-        if data.data == True:
+        if data.data:
             self.is_stop_receive = True
 
     def score_callback(self, data):
         self.score = data.data
 
-    def enemy_pos_from_score_callback(self, data):
+    def epfs_callback(self, data):
         self.enemy_pos_from_score = data.data
 
+    def my_pose_callback(self,data):
+        self.my_pose = data
+
     def check_stop(self):
-        result = self.is_stop_receive
-
-        self.is_stop_receive = False
-
-        return result
+        return self.is_stop_receive
 
     def check_score(self):
         result = [i for i, e in enumerate(self.score) if e > 0]
@@ -107,17 +113,27 @@ class CommonFunction:
     def check_enemy_pos_from_score(self):
         return self.enemy_pos_from_score
 
+    def check_my_pose(self):
+        return self.my_pose
+
     def check_client(self):
         return self.client.get_state()
 
     def set_goal(self, x, y, yaw):
-        #NOTE:この中の処理は、my_move_base関数の中に移動しました。(木山)
-        my_move_base.setGoal(self.client,x/1000.0,y/1000.0,yaw)
-
-
+        my_move_base.setGoal(self.client, x / 1000.0, y / 1000.0, yaw)
 
     def cancel_goal(self):
         self.client.cancel_goal()
+
+    def pub_vel(self, x, y, a):
+        msg = Twist()
+
+        msg.linear.x = x
+        msg.linear.y = y
+
+        msg.angular.z = a
+
+        self.cmd_vel.publish(msg)
 
 
 class Selecting(smach.State):
@@ -130,47 +146,63 @@ class Selecting(smach.State):
         self.func = func
 
     def execute(self, userdata):
-        r = rospy.Rate(RATE)
-
         self.func.reset()
 
-        while not rospy.is_shutdown():
-            if self.func.check_stop():
-                return 'end'
+        userdata.target = None
 
+        while not rospy.is_shutdown():
             if not self.func.is_data_exists():
                 continue
 
-            target = self.select()
+            self.select(userdata)
 
-            if target is not None:
-                userdata.target = target
+            result = self.check(userdata)
 
-                return 'success'
+            if result is not None:
+                self.func.reset()
 
-            r.sleep()
+                return result
+
+            rospy.Rate(RATE).sleep()
 
         return 'end'
 
-    def select(self):
-        # TODO: 判断材料に自己位置を導入
-        # TODO: できれば経路も考慮したい
-        # TODO: 履歴
+    def check(self, userdata):
+        if self.func.check_stop():
+            return 'end'
+
+        if userdata.target is not None:
+            return 'success'
+
+        return None
+
+    def select(self, userdata):
         costs = BASE_COSTS[:]
 
-        score = self.func.check_score()
         enemy = self.func.check_enemy_pos_from_score()
 
-        for i in score:
+        my = self.func.check_my_pose()
+
+        for i in self.func.check_score():
             costs[i] += K_MY_MARKER
 
         for i, _ in enumerate(costs):
             for j in NEAR_CELLS[i]:
                 costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
 
-        index = costs.index(min(costs))
+        for i, _ in enumerate(costs):
+            costs[i] += distance(userdata, POINTS[i], my) * K_MY_POSE
 
-        return index if min(costs) < K_MY_MARKER else None
+        cost = min(costs)
+
+        if cost < K_MY_MARKER:
+            userdata.target = costs.index(cost)
+
+    def distance(self, userdata, point, my_pose):
+        dx = point[0] - my_pose.pos.x * 1000
+        dy = point[1] - my_pose.pos.y * 1000
+
+        return math.sqrt(dx * dx + dy * dy)
 
 
 class Moving(smach.State):
@@ -184,33 +216,29 @@ class Moving(smach.State):
         self.func = func
 
     def execute(self, userdata):
-        r = rospy.Rate(RATE)
-
         self.func.reset()
         self.func.set_goal(*(POINTS[userdata.target]))
 
         while not rospy.is_shutdown():
-            if self.func.check_stop():
-                return 'end'
-
             if not self.func.is_data_exists():
                 continue
 
-            result = self.check(userdata.target)
+            result = self.check(userdata)
 
             if result is not None:
-                self.func.cancel_goal()
+                self.func.reset()
 
                 return result
 
-            r.sleep()
+            rospy.Rate(RATE).sleep()
 
         return 'end'
 
-    def check(self, target):
-        score = self.func.check_score()
+    def check(self, userdata):
+        if self.func.check_stop():
+            return 'end'
 
-        if target in score:
+        if userdata.target in self.func.check_score():
             return 'read'
 
         state = self.func.check_client()
@@ -220,7 +248,7 @@ class Moving(smach.State):
         if state == actionlib_msgs.msg.GoalStatus.ACTIVE:
             return None
         if state == actionlib_msgs.msg.GoalStatus.RECALLED:
-            return None
+            return 'fail'
         if state == actionlib_msgs.msg.GoalStatus.REJECTED:
             return 'fail'
         if state == actionlib_msgs.msg.GoalStatus.PREEMPTED:
@@ -244,37 +272,37 @@ class Reading(smach.State):
 
         self.func = func
 
+        self.start = rospy.Time.now()
+
     def execute(self, userdata):
-        # TODO: 当たらない程度に移動
-        r = rospy.Rate(RATE)
-
         self.func.reset()
+        self.func.pub_vel(0, 0, math.pi / 2)
 
-        start = rospy.Time.now()
+        self.start = rospy.Time.now()
 
         while not rospy.is_shutdown():
-            if self.func.check_stop():
-                return 'end'
-
             if not self.func.is_data_exists():
                 continue
 
-            if (rospy.Time.now() - start).to_sec() > TIMEOUT_READING:
-                return 'timeout'
-
-            result = self.check(userdata.target)
+            result = self.check(userdata)
 
             if result is not None:
+                self.func.reset()
+
                 return result
 
-            r.sleep()
+            rospy.Rate(RATE).sleep()
 
         return 'end'
 
-    def check(self, target):
-        score = self.func.check_score()
+    def check(self, userdata):
+        if self.func.check_stop():
+            return 'end'
 
-        if target in score:
+        if (rospy.Time.now() - self.start).to_sec() > TIMEOUT_READING:
+            return 'timeout'
+
+        if userdata.target in self.func.check_score():
             return 'success'
 
         return None
@@ -286,10 +314,13 @@ RATE = 10
 TIMEOUT_READING = 5
 
 
-K_MY_MARKER = 100
+K_MY_MARKER = 10000
 
 
 K_ENEMY_POS_FROM_SCORE = 1
+
+
+K_MY_POSE = 0.01
 
 
 POINTS = eval("""
