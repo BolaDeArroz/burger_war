@@ -172,7 +172,7 @@ class BDA_strategy():
             
         # decide state
         # my points 
-        if my_points - enemy_points > 8:
+        if enemy_points > 8:
             result = self.all_state_list[1]
         elif enemy_points - my_points > 5:
             result = self.all_state_list[0]
