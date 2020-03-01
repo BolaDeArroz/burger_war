@@ -12,8 +12,9 @@ import tf
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
+import my_move_base
 
-class bevavior_attack(smach.State):
+class behavior_attack(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['outcome'])
 
@@ -70,10 +71,8 @@ class CommonFunction:
         self.is_stop_receive = False
 
     def is_data_exists(self):
-        # TODO: pub_scoreが実装されたら修正
-        # return (len(self.score) > 0 and
-        #         len(self.enemy_pos_from_score) > 0)
-        return (len(self.enemy_pos_from_score) > 0)
+        return (len(self.score) > 0 and
+                len(self.enemy_pos_from_score) > 0)
 
     def stop_callback(self, data):
         if data.data:
@@ -104,23 +103,7 @@ class CommonFunction:
         return self.client.get_state()
 
     def set_goal(self, x, y, yaw):
-        self.client.wait_for_server()
-
-        goal = MoveBaseGoal()
-
-        goal.target_pose.header.frame_id = 'map'
-        goal.target_pose.header.stamp = rospy.Time.now()
-        goal.target_pose.pose.position.x = x
-        goal.target_pose.pose.position.y = y
-
-        q = tf.transformations.quaternion_from_euler(0, 0, yaw)
-
-        goal.target_pose.pose.orientation.x = q[0]
-        goal.target_pose.pose.orientation.y = q[1]
-        goal.target_pose.pose.orientation.z = q[2]
-        goal.target_pose.pose.orientation.w = q[3]
-
-        self.client.send_goal(goal)
+        my_move_base.setGoal(self.client, x / 1000.0, y / 1000.0, yaw)
 
     def cancel_goal(self):
         self.client.cancel_goal()
