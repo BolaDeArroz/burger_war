@@ -14,6 +14,9 @@ from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
 import my_move_base
 
+from burger_war.msg import MyPose
+
+
 class behavior_attack(smach.State):
     def __init__(self):
         smach.State.__init__(self, outcomes=['outcome'])
@@ -58,6 +61,8 @@ class CommonFunction:
 
         self.enemy_pos_from_score = []
 
+        self.my_pose = None
+
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
         rospy.Subscriber(
@@ -66,13 +71,16 @@ class CommonFunction:
                 'pub_score', Int32MultiArray, self.score_callback)
         rospy.Subscriber(
                 'enemy_pos_from_score', Float32MultiArray, self.epfs_callback)
+        rospy.Subscriber(
+                'my_pose', MyPose, self.my_pose_callback)
 
     def reset(self):
         self.is_stop_receive = False
 
     def is_data_exists(self):
         return (len(self.score) > 0 and
-                len(self.enemy_pos_from_score) > 0)
+                len(self.enemy_pos_from_score) > 0 and
+                self.my_pose is not None)
 
     def stop_callback(self, data):
         if data.data:
@@ -83,6 +91,9 @@ class CommonFunction:
 
     def epfs_callback(self, data):
         self.enemy_pos_from_score = data.data
+
+    def my_pose_callback(self,data):
+        self.my_pose = data
 
     def check_stop(self):
         result = self.is_stop_receive
@@ -98,6 +109,9 @@ class CommonFunction:
 
     def check_enemy_pos_from_score(self):
         return self.enemy_pos_from_score
+
+    def check_my_pose(self):
+        return self.my_pose
 
     def check_client(self):
         return self.client.get_state()
@@ -148,12 +162,11 @@ class Selecting(smach.State):
         return None
 
     def select(self, userdata):
-        # TODO: 判断材料に自己位置を導入
-        # TODO: できれば経路も考慮したい
-        # TODO: 履歴
         costs = BASE_COSTS[:]
 
         enemy = self.func.check_enemy_pos_from_score()
+
+        my = self.func.check_my_pose()
 
         for i in self.func.check_score():
             costs[i] += K_MY_MARKER
@@ -162,10 +175,19 @@ class Selecting(smach.State):
             for j in NEAR_CELLS[i]:
                 costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
 
+        for i, _ in enumerate(costs):
+            costs[i] += distance(userdata, POINTS[i], my) * K_MY_POSE
+
         cost = min(costs)
 
         if cost < K_MY_MARKER:
             userdata.target = costs.index(cost)
+
+    def distance(self, userdata, point, my_pose):
+        dx = point[0] - my_pose.pos.x * 1000
+        dy = point[1] - my_pose.pos.y * 1000
+
+        return math.sqrt(dx * dx + dy * dy)
 
 
 class Moving(smach.State):
@@ -269,13 +291,16 @@ class Reading(smach.State):
 RATE = 10
 
 
-TIMEOUT_READING = 5
+TIMEOUT_READING = 1
 
 
-K_MY_MARKER = 100
+K_MY_MARKER = 10000
 
 
 K_ENEMY_POS_FROM_SCORE = 1
+
+
+K_MY_POSE = 0.01
 
 
 POINTS = eval("""
