@@ -150,6 +150,7 @@ class Selecting(smach.State):
         userdata.target = None
 
         while not rospy.is_shutdown():
+            print("[Selecting] loop")
             if not self.func.is_data_exists():
                 continue
 
@@ -194,6 +195,7 @@ class Selecting(smach.State):
 
         cost = min(costs)
 
+        print("[Selecting] select", costs.index(cost), cost)
         if cost < K_MY_MARKER:
             userdata.target = costs.index(cost)
 
