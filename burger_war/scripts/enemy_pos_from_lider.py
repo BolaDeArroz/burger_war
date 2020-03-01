@@ -93,7 +93,7 @@ class enemy_pos_from_lider:
 def main(args):
     rospy.init_node('enemy_pos_from_lider', anonymous=True)
     ra = enemy_pos_from_lider()
-    print('[enemy_pos_from_lider]initialized')
+    # print('[enemy_pos_from_lider]initialized')
     ra.run()
 
 if __name__=='__main__':

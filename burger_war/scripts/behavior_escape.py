@@ -168,7 +168,7 @@ class GoToEscapePoint(smach.State):
 
         #逃げる位置計算
         enemy_pos=userdata.enemy_pos_in
-        print("enemy_pos",enemy_pos)
+        # print("enemy_pos",enemy_pos)
         #中心挟んで相手の反対地点に逃げるパティーン
         #escape_pos_x,escape_pos_y=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
         
@@ -208,7 +208,7 @@ class GoToEscapePoint(smach.State):
             if self.enemy_pos_from_lider["is_topic_receive"]==True:
                 #前回の敵位置との距離を計算
                 dist=self.get_distance(enemy_pos.x,enemy_pos.y,self.enemy_pos_from_lider["enemy_pos"].x,self.enemy_pos_from_lider["enemy_pos"].y)
-                print("dist",dist)
+                # print("dist",dist)
                 if dist >= self.CHANGE_ESCAPE_POS_TH: #しきい値を上回っていた場合
                     return 'is_Gone' #抜ける。再計算されて、目的地が変更される。
 

@@ -87,7 +87,7 @@ class TeriyakiBurger():
         x = self.poseToindex(pose_x)
         y = self.poseToindex(pose_y)
         th = TARGET_TH[x][y]
-        print("POSE pose_x: {}, pose_y: {}. INDEX x:{}, y:{}".format(pose_x, pose_y, x, y))
+        #print("POSE pose_x: {}, pose_y: {}. INDEX x:{}, y:{}".format(pose_x, pose_y, x, y))
         return th
 
     def poseToindex(self, pose):
