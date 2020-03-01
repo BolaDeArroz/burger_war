@@ -107,7 +107,7 @@ class CommonFunction:
     def check_score(self):
         result = [i for i, e in enumerate(self.score) if e > 0]
 
-        return result
+        return [i for i in result if i < len(POINTS)]
 
     def check_enemy_pos_from_score(self):
         return self.enemy_pos_from_score
