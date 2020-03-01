@@ -112,6 +112,13 @@ class GoToEscapePoint(smach.State):
     def stop_callback(self,data):
         self.is_stop_receive=True
 
+    def enemy_pos_from_lider_callback(self,data):
+        self.enemy_pos_from_lider["enemy_pos"]=data
+        self.enemy_pos_from_lider["is_topic_receive"]=True
+
+    def get_distance(self,x1, y1, x2, y2):
+        d = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+        return d
 
     def __init__(self):
         smach.State.__init__(self,  outcomes=['is_Gone','is_receiveStopSig'],
@@ -124,11 +131,19 @@ class GoToEscapePoint(smach.State):
         self.sub_stop = rospy.Subscriber('/{}/state_stop'.format(self.name), Bool, self.stop_callback)
         self.is_stop_receive=False
 
+        # liderから敵位置推定トピックを受け取るための定義
+        self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider'.format(self.name), Point, self.enemy_pos_from_lider_callback)
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
+
         #Move base クライアント
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
 
         # velocity publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
+
+        # 移動途中に敵を発見した時に、目的地を切り替えるしきい値[m](前回の敵座標-発見した敵座標)
+        self.CHANGE_ESCAPE_POS_TH=0.50
+
 
     def calc_escape_pos_v1(self,x,y):
             return -x,-y
@@ -149,7 +164,8 @@ class GoToEscapePoint(smach.State):
 
 
     def execute(self,userdata):
-
+        #パラメータ初期化
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
 
         #逃げる位置計算
         enemy_pos=userdata.enemy_pos_in
@@ -176,8 +192,9 @@ class GoToEscapePoint(smach.State):
                 self.move_base_client.get_state() in [  actionlib_msgs.msg.GoalStatus.ACTIVE,\
                                                         actionlib_msgs.msg.GoalStatus.PENDING]:
 
-            #逃げる途中でストップトピックを受け取った場合も抜ける
+            #逃げる途中で,ストップトピックを受け取った場合
             if self.is_stop_receive == True:
+                #ループ抜ける
                 #目的地設定キャンセル
                 self.move_base_client.cancel_goal()
                 #移動停止
@@ -186,6 +203,15 @@ class GoToEscapePoint(smach.State):
                     r.sleep()
                 self.is_stop_receive=False
                 return 'is_receiveStopSig'
+
+            #逃げる途中で、敵と遭遇した場合
+            if self.enemy_pos_from_lider["is_topic_receive"]==True:
+                #前回の敵位置との距離を計算
+                dist=self.get_distance(enemy_pos.x,enemy_pos.y,self.enemy_pos_from_lider["enemy_pos"].x,self.enemy_pos_from_lider["enemy_pos"].y)
+                print("dist",dist)
+                if dist >= self.CHANGE_ESCAPE_POS_TH: #しきい値を上回っていた場合
+                    return 'is_Gone' #抜ける。再計算されて、目的地が変更される。
+
             
             #TODO:ゴールが壁の中になった時の対応
 
