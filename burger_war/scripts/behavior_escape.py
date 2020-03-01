@@ -165,9 +165,9 @@ class GoToEscapePoint(smach.State):
         #print(escape_pos_x,escape_pos_y)
 
         #ゴール設定
-        #my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
+        my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
         #DEBUG:
-        my_move_base.setGoal(self.move_base_client,-0.45,-0.45,escape_yaw)
+        #my_move_base.setGoal(self.move_base_client,-0.45,-0.45,escape_yaw)
         
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
