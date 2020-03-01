@@ -103,8 +103,9 @@ def init_points(side, diff):
     names = [k for k, v in diff.items() if v == INV_SIDE[side]]
 
     for name in names:
-        for i in POINT_MAPPING[name]:
-            points[i] = 1
+        if name in POINT_MAPPING:
+            for i in POINT_MAPPING[name]:
+                points[i] = 1
 
     return points
 
