@@ -13,7 +13,11 @@ Panels:
         - /LaserScan1
         - /Map1
         - /Planner Plan1
+        - /Planner Plan1/Status1
         - /Global Map1
+        - /TebPlanner1
+        - /TebPlanner1/Marker1
+        - /Marker1
       Splitter Ratio: 0.5
 
     Tree Height: 843
@@ -36,6 +40,8 @@ Panels:
     Name: Time
     SyncMode: 0
     SyncSource: LaserScan
+Toolbars:
+  toolButtonStyle: 2
 Visualization Manager:
   Class: ""
   Displays:
@@ -202,12 +208,12 @@ Visualization Manager:
       Class: rviz/Map
       Color Scheme: map
       Draw Behind: false
-      Enabled: false
+      Enabled: true
       Name: Map
       Topic: /map
       Unreliable: false
       Use Timestamp: false
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -237,17 +243,17 @@ Visualization Manager:
           Class: rviz/Map
           Color Scheme: costmap
           Draw Behind: true
-          Enabled: true
+          Enabled: false
           Name: Costmap
           Topic: /move_base/global_costmap/costmap
           Unreliable: false
           Use Timestamp: false
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
           Color: 255; 0; 0
-          Enabled: true
+          Enabled: false
           Head Diameter: 0.300000012
           Head Length: 0.200000003
           Length: 0.300000012
@@ -266,8 +272,8 @@ Visualization Manager:
 
           Topic: /move_base/DWAPlannerROS/global_plan
           Unreliable: false
-          Value: true
-      Enabled: true
+          Value: false
+      Enabled: false
       Name: Global Map
     - Class: rviz/Group
       Displays:
@@ -276,7 +282,7 @@ Visualization Manager:
           Color: 0; 0; 0
           Enabled: true
           Name: Polygon
-          Topic: /red_bot/move_base/local_costmap/footprint
+          Topic: /move_base/local_costmap/footprint
           Unreliable: false
           Value: true
         - Alpha: 0.699999988
@@ -338,7 +344,7 @@ Visualization Manager:
           Size (Pixels): 3
           Size (m): 0.0199999996
           Style: Flat Squares
-          Topic: /red_bot/move_base/DWAPlannerROS/cost_cloud
+          Topic: /move_base/DWAPlannerROS/cost_cloud
           Unreliable: false
           Use Fixed Frame: true
           Use rainbow: true
@@ -379,14 +385,13 @@ Visualization Manager:
     - Class: rviz/Group
       Displays:
         - Class: rviz/Marker
-          Enabled: true
-          Marker Topic: /red_bot/move_base/TebLocalPlannerROS/teb_markers
+          Enabled: false
+          Marker Topic: /move_base/TebLocalPlannerROS/teb_markers
           Name: Marker
           Namespaces:
-            PointObstacles: true
-            RobotFootprintModel: true
+            {}
           Queue Size: 1
-          Value: true
+          Value: false
         - Alpha: 1
           Buffer Length: 1
           Class: rviz/Path
@@ -407,7 +412,7 @@ Visualization Manager:
           Radius: 0.0299999993
           Shaft Diameter: 0.100000001
           Shaft Length: 0.100000001
-          Topic: /red_bot/move_base/TebLocalPlannerROS/local_plan
+          Topic: /move_base/TebLocalPlannerROS/local_plan
           Unreliable: false
           Value: true
         - Alpha: 1
@@ -423,11 +428,38 @@ Visualization Manager:
           Shaft Length: 0.230000004
           Shaft Radius: 0.00999999978
           Shape: Arrow (Flat)
-          Topic: /red_bot/move_base/TebLocalPlannerROS/teb_poses
+          Topic: /move_base/TebLocalPlannerROS/teb_poses
           Unreliable: false
           Value: true
       Enabled: true
       Name: TebPlanner
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /enemy_marker
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Circles color: 170; 0; 0
+      Class: Obstacles
+      Enabled: true
+      Margin color: 0; 170; 0
+      Name: Obstacles
+      Opacity: 0.75
+      Segments color: 170; 170; 0
+      Segments thickness: 0.0299999993
+      Topic: /obstacles
+      Unreliable: false
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /enemy_pos_from_lider_marker
+      Name: Marker
+      Namespaces:
+        basic_shapes: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -458,6 +490,7 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
+
       Scale: 205.695999
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
