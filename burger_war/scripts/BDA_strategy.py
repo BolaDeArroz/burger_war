@@ -36,6 +36,9 @@ class BDA_strategy():
         self._structure_subs = {}
         self._status_subs = {}
 
+        # before camera result
+        self._prev_camera_result = [0.0, 0.0]
+
         # sub
         """
         use almost all the our publish data
@@ -161,6 +164,31 @@ class BDA_strategy():
             print('missing calc_distance_enemy_me: ', e)
         return _dis
 
+    def check_enemy_area(self):
+        result = False
+        _dis = 1.0
+        try:
+            _enemy_pos_x = self.enemy_pose_from_camera.pos.x
+            _enemy_pos_y = self.enemy_pose_from_camera.pos.y
+
+            if (self._prev_camera_result[0] != _enemy_pos_x) and (self._prev_camera_result[1] != _enemy_pos_y):
+                # update
+                self._prev_camera_result[0] = _enemy_pos_x
+                self._prev_camera_result[1] = _enemy_pos_y
+
+                _x = self.my_pose.pos.x - self.enemy_pose_from_camera.pos.x
+                _y = self.my_pose.pos.y - self.enemy_pose_from_camera.pos.y
+                _dis = math.sqrt(_x*_x + _y*_y)
+                # print('dis', _dis)
+                if _dis > 1.0:
+                    return True
+                else:
+                    return False
+
+        except Exception as e:
+            return False
+            
+
 
     def evaluate_war_situation(self):
         result = self.all_state_list[0]
@@ -168,22 +196,29 @@ class BDA_strategy():
         my_points, enemy_points, leftover_points = self.calc_both_points()
         # print('my_points, enemy_points, leftover_points', my_points, enemy_points, leftover_points)
         # second 
+
+        #print("[enemy_pos_from_score] ", self.enemy_pos_from_score)
         
-            
         # decide state
-        # my points 
-        if enemy_points > 8:
+
+        if self.check_enemy_area():
             result = self.all_state_list[1]
+        # my points 
+
         elif enemy_points - my_points > 5:
             result = self.all_state_list[0]
 
+        
         if self.calc_distance_enemy_me() < 1.0:
             result = self.all_state_list[1]
 
+        if my_points - enemy_points > 9:
+            result = self.all_state_list[0]
         # check stagnation
         if self._stagnation:
             result = self.all_state_list[1]
         return result
+
 
     def strategy_run(self):
         r=rospy.Rate(5)
@@ -207,7 +242,7 @@ class BDA_strategy():
             # stop topic
             if state != prev_state and preserve_count <= 0:
                 if state == self.all_state_list[1]:
-                    preserve_count = 70
+                    preserve_count = 50
                 self.pub_state_stop.publish(True)
                 stop_send_result = True
             if stop_send_result == True:
