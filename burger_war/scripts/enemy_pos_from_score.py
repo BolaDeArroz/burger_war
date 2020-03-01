@@ -62,9 +62,6 @@ def calc_posmap(side, points, old, new):
 
     posmap = points_to_posmap(points)
 
-    print("[enemy_pos_from_score] {} {}".format(
-        posmap.index(max(posmap)), max(posmap)))
-
     return posmap, points
 
 
@@ -139,7 +136,6 @@ INV_SIDE = {
 }
 
 
-# TODO: 位置関係を確認(下が赤と仮定)
 INIT_POINTS = {}
 
 INIT_POINTS["r"] = [
