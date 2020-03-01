@@ -15,7 +15,6 @@ from geometry_msgs.msg import Point,Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 import my_move_base
-
 class bevavior_escape(smach.State):
     def __init__(self):
         #robot name 
@@ -176,6 +175,7 @@ class GoToEscapePoint(smach.State):
         #相手の位置によって反対側の決まった地点に逃げるパティーン
         escape_pos_x,escape_pos_y=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
         
+
         #ゴール時の方向はマップ中心を向く用に変更
         escape_yaw=math.atan2(escape_pos_y,escape_pos_x)-math.pi
         #print(escape_pos_x,escape_pos_y)
@@ -214,10 +214,7 @@ class GoToEscapePoint(smach.State):
 
             
             #TODO:ゴールが壁の中になった時の対応
-
             r.sleep()
- 
-        
         #目的地についた場合
         return 'is_Gone'
 

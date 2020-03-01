@@ -38,6 +38,7 @@ class enemy_pos_from_lider:
 
  
         self.marker=Marker()
+
         self.marker.header.frame_id="map"
         self.marker.ns = "basic_shapes"
         self.marker.id = 0
@@ -63,6 +64,7 @@ class enemy_pos_from_lider:
                 enemy_pos.x=-obs.center.y
                 enemy_pos.y= obs.center.x
                 
+
 
                 #敵とオブジェクトを見分けるマージン[m]。値が大きいほど、オブジェクトだと判定するエリアが大きくなる。
                 judge_enemy_mergin=0.0
