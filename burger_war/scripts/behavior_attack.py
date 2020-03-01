@@ -9,6 +9,7 @@ import smach
 import smach_ros
 import tf
 
+from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
@@ -65,6 +66,8 @@ class CommonFunction:
 
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
 
+        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=1)
+
         rospy.Subscriber(
                 'state_stop', Bool, self.stop_callback)
         rospy.Subscriber(
@@ -76,6 +79,9 @@ class CommonFunction:
 
     def reset(self):
         self.is_stop_receive = False
+
+        self.cancel_goal()
+        self.pub_vel(0, 0, 0)
 
     def is_data_exists(self):
         return (len(self.score) > 0 and
@@ -96,11 +102,7 @@ class CommonFunction:
         self.my_pose = data
 
     def check_stop(self):
-        result = self.is_stop_receive
-
-        self.is_stop_receive = False
-
-        return result
+        return self.is_stop_receive
 
     def check_score(self):
         result = [i for i, e in enumerate(self.score) if e > 0]
@@ -121,6 +123,16 @@ class CommonFunction:
 
     def cancel_goal(self):
         self.client.cancel_goal()
+
+    def pub_vel(self, x, y, a):
+        msg = Twist()
+
+        msg.linear.x = x
+        msg.linear.y = y
+
+        msg.angular.z = a
+
+        self.cmd_vel.publish(msg)
 
 
 class Selecting(smach.State):
@@ -146,6 +158,8 @@ class Selecting(smach.State):
             result = self.check(userdata)
 
             if result is not None:
+                self.func.reset()
+
                 return result
 
             rospy.Rate(RATE).sleep()
@@ -211,6 +225,8 @@ class Moving(smach.State):
             result = self.check(userdata)
 
             if result is not None:
+                self.func.reset()
+
                 return result
 
             rospy.Rate(RATE).sleep()
@@ -259,6 +275,7 @@ class Reading(smach.State):
 
     def execute(self, userdata):
         self.func.reset()
+        self.func.pub_vel(0, 0, math.pi / 2)
 
         self.start = rospy.Time.now()
 
@@ -269,6 +286,8 @@ class Reading(smach.State):
             result = self.check(userdata)
 
             if result is not None:
+                self.func.reset()
+
                 return result
 
             rospy.Rate(RATE).sleep()
@@ -291,7 +310,7 @@ class Reading(smach.State):
 RATE = 10
 
 
-TIMEOUT_READING = 1
+TIMEOUT_READING = 5
 
 
 K_MY_MARKER = 10000
