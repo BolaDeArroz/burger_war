@@ -3,6 +3,7 @@
 
 <!--# RESPECT @TeamRabbit-->
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+    <remap from="/scan" to="/scan_filtered" /><!--デフォルトではなく、laser_filter でフィルタ後のトピックを使う-->
     <param name="active"               value="true"/>
     <param name="use_scan"             value="true"/>
     <param name="use_pcl"              value="false"/>
