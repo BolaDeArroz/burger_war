@@ -91,6 +91,9 @@ def calc_points(side, points, diff):
 def points_to_posmap(points):
     s = sum(points)
 
+    if s <= 0:
+        return [0 for _ in points]
+
     return [x / s for x in points]
 
 
