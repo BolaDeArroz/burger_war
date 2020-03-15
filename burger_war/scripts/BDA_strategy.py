@@ -201,22 +201,27 @@ class BDA_strategy():
         
         # decide state
 
+        # camera
+        """
         if self.check_enemy_area():
             result = self.all_state_list[1]
+        """
         # my points 
+        # check stagnation
+        if self._stagnation:
+            result = self.all_state_list[1]
+            print('****************** stagnation ***************************')
 
-        elif enemy_points - my_points > 5:
+        if enemy_points - my_points > 5:
             result = self.all_state_list[0]
 
         
-        if self.calc_distance_enemy_me() < 1.0:
+        if self.calc_distance_enemy_me() < 0.6:
             result = self.all_state_list[1]
 
         if my_points - enemy_points > 9:
             result = self.all_state_list[0]
-        # check stagnation
-        if self._stagnation:
-            result = self.all_state_list[1]
+        
         return result
 
 
@@ -242,7 +247,7 @@ class BDA_strategy():
             # stop topic
             if state != prev_state and preserve_count <= 0:
                 if state == self.all_state_list[1]:
-                    preserve_count = 50
+                    preserve_count = 30
                 self.pub_state_stop.publish(True)
                 stop_send_result = True
             if stop_send_result == True:
@@ -268,7 +273,7 @@ class BDA_strategy():
             if abs(x_prev_my_pos - self.my_pose.pos.x) < 0.1:
                 if abs(y_prev_my_pos - self.my_pose.pos.y) < 0.1:
                     stag_count = stag_count+1
-                    if stag_count > 10:
+                    if stag_count > 20:
                         print('confirm stagnation!!')
                         self._stagnation = True
                         stag_count = 0
