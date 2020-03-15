@@ -13,11 +13,10 @@ from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
-
 import my_move_base
 
-
 from burger_war.msg import MyPose
+
 
 class behavior_attack(smach.State):
     def __init__(self):
@@ -59,9 +58,9 @@ class CommonFunction:
     def __init__(self):
         self.is_stop_receive = False
 
-        self.score = []
+        self.score = None
 
-        self.enemy_pos_from_score = []
+        self.enemy_pos_from_score = None
 
         self.my_pose = None
 
@@ -81,13 +80,14 @@ class CommonFunction:
     def reset(self):
         self.is_stop_receive = False
 
-        self.cancel_goal()
-        self.pub_vel(0, 0, 0)
+        self.client.cancel_goal()
+
+        self.pub_vel()
 
     def is_data_exists(self):
-        return (len(self.score) > 0 and
-                len(self.enemy_pos_from_score) > 0 and
-                self.my_pose is not None)
+        return ((self.score is not None) and
+                (self.enemy_pos_from_score is not None) and
+                (self.my_pose is not None))
 
     def stop_callback(self, data):
         if data.data:
@@ -106,9 +106,7 @@ class CommonFunction:
         return self.is_stop_receive
 
     def check_score(self):
-        result = [i for i, e in enumerate(self.score) if e > 0]
-
-        return result
+        return [i for i, e in enumerate(self.score) if e > 0]
 
     def check_enemy_pos_from_score(self):
         return self.enemy_pos_from_score
@@ -122,10 +120,7 @@ class CommonFunction:
     def set_goal(self, x, y, yaw):
         my_move_base.setGoal(self.client, x / 1000.0, y / 1000.0, yaw)
 
-    def cancel_goal(self):
-        self.client.cancel_goal()
-
-    def pub_vel(self, x, y, a):
+    def pub_vel(self, x=0, y=0, a=0):
         msg = Twist()
 
         msg.linear.x = x
@@ -138,11 +133,12 @@ class CommonFunction:
 
 class Selecting(smach.State):
     def __init__(self, func):
+        outcomes = ['success', 'end']
+
+        keys = ['target']
+
         smach.State.__init__(
-                self,
-                outcomes=['success', 'end'],
-                input_keys=['target'],
-                output_keys=['target'])
+                self, outcomes=outcomes, input_keys=keys, output_keys=keys)
 
         self.func = func
 
@@ -178,29 +174,28 @@ class Selecting(smach.State):
         return None
 
     def select(self, userdata):
-        costs = BASE_COSTS[:]
-
+        mypos = self.func.check_my_pose()
         enemy = self.func.check_enemy_pos_from_score()
 
-        my = self.func.check_my_pose()
+        costs = [x.bcost for x in MK_INFOS]
 
         for i in self.func.check_score():
-            if i < len(costs):
+
+            if i < len(MK_INFOS):
                 costs[i] += K_MY_MARKER
 
-        for i, _ in enumerate(costs):
-            for j in NEAR_CELLS[i]:
-                costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
+        for i in range(len(costs)):
+            costs[i] += self.distance(MK_INFOS[i].point, mypos) * K_MY_POSE
 
-        for i, _ in enumerate(costs):
-            costs[i] += self.distance(userdata, POINTS[i], my) * K_MY_POSE
+            for j in MK_INFOS[i].nears:
+                costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
 
         cost = min(costs)
 
         if cost < K_MY_MARKER:
             userdata.target = costs.index(cost)
 
-    def distance(self, userdata, point, my_pose):
+    def distance(self, point, my_pose):
         dx = point[0] - my_pose.pos.x * 1000
         dy = point[1] - my_pose.pos.y * 1000
 
@@ -209,17 +204,18 @@ class Selecting(smach.State):
 
 class Moving(smach.State):
     def __init__(self, func):
+        outcomes = ['success', 'fail', 'read', 'end']
+
+        keys = ['target']
+
         smach.State.__init__(
-                self,
-                outcomes=['success', 'fail', 'read', 'end'],
-                input_keys=['target'],
-                output_keys=['target'])
+                self, outcomes=outcomes, input_keys=keys, output_keys=keys)
 
         self.func = func
 
     def execute(self, userdata):
         self.func.reset()
-        self.func.set_goal(*(POINTS[userdata.target]))
+        self.func.set_goal(*(MK_INFOS[userdata.target].point))
 
         while not rospy.is_shutdown():
             if not self.func.is_data_exists():
@@ -267,10 +263,12 @@ class Moving(smach.State):
 
 class Reading(smach.State):
     def __init__(self, func):
+        outcomes = ['success', 'timeout', 'end']
+
+        keys = ['target']
+
         smach.State.__init__(
-                self,
-                outcomes=['success', 'timeout', 'end'],
-                input_keys=['target'])
+                self, outcomes=outcomes, input_keys=keys, output_keys=keys)
 
         self.func = func
 
@@ -278,7 +276,7 @@ class Reading(smach.State):
 
     def execute(self, userdata):
         self.func.reset()
-        self.func.pub_vel(0, 0, math.pi / 2)
+        self.func.pub_vel(*VEL_SPIN)
 
         self.start = rospy.Time.now()
 
@@ -310,63 +308,42 @@ class Reading(smach.State):
         return None
 
 
+class MkInfo:
+    def __init__(self, point, bcost, nears):
+        self.point = point
+        self.bcost = bcost
+        self.nears = nears
+
+
 RATE = 10
 
 
 TIMEOUT_READING = 5
 
 
+VEL_SPIN = (0, 0, math.pi / 2)
+
+
 K_MY_MARKER = 10000
 
-
 K_ENEMY_POS_FROM_SCORE = 1
-
 
 K_MY_POSE = 0.01
 
 
-POINTS = eval("""
+MK_INFOS = eval("""
 [
-        (-530,  760, -math.pi / 2),
-        ( 530,  760, -math.pi / 2),
-        (-530,  300,  math.pi / 2),
-        ( 530,  300,  math.pi / 2),
-        (   0,  300, -math.pi / 2),
-        (-300,    0,        0),
-        ( 300,    0,  math.pi),
-        (   0, -300,  math.pi / 2),
-        (-530, -300, -math.pi / 2),
-        ( 530, -300, -math.pi / 2),
-        (-530, -760,  math.pi / 2),
-        ( 530, -760,  math.pi / 2)
-]
-""")
-
-
-BASE_COSTS = eval("""
-[
-        0.00, 0.00,
-        0.25, 0.25,
-        0.50, 0.50, 0.50, 0.50,
-        0.25, 0.25,
-        0.00, 0.00
-]
-""")
-
-
-NEAR_CELLS = eval("""
-[
-        [ 2,  3],
-        [ 4,  5],
-        [ 7,  8],
-        [ 9, 10],
-        [ 8,  9],
-        [ 8, 14],
-        [ 9, 15],
-        [14, 15],
-        [13, 14],
-        [15, 16],
-        [18, 19],
-        [20, 21]
+        MkInfo((-530,  800, -math.pi / 2), 0.00, [ 2,  3]),
+        MkInfo(( 530,  800, -math.pi / 2), 0.00, [ 4,  5]),
+        MkInfo((-530,  260,  math.pi / 2), 0.25, [ 7,  8]),
+        MkInfo(( 530,  260,  math.pi / 2), 0.25, [ 9, 10]),
+        MkInfo((   0,  340, -math.pi / 2), 0.50, [ 8,  9]),
+        MkInfo((-340,    0,  0),           0.50, [ 8, 14]),
+        MkInfo(( 340,    0,  math.pi),     0.50, [ 9, 15]),
+        MkInfo((   0, -340,  math.pi / 2), 0.50, [14, 15]),
+        MkInfo((-530, -260, -math.pi / 2), 0.25, [13, 14]),
+        MkInfo(( 530, -260, -math.pi / 2), 0.25, [15, 16]),
+        MkInfo((-530, -800,  math.pi / 2), 0.00, [18, 19]),
+        MkInfo(( 530, -800,  math.pi / 2), 0.00, [20, 21])
 ]
 """)
