@@ -193,6 +193,8 @@ class GoEnemyPos(smach.State):
             # tracking enemy
             if self.image is not None:
                 tracking_info = get_tracking_info(self.image)
+                if tracking_info == {}:
+                    continue
                 if tracking_info['center'][0] > 370:
                     twist = rotation_operate(1)
                 elif tracking_info['center'][0] < 270:

@@ -262,7 +262,7 @@ class BDA_strategy():
             result = self.all_state_list[0]
 
         
-        if self.calc_distance_enemy_me() < 0.8:
+        if self.calc_distance_enemy_me() < 0.7:
             result = self.all_state_list[1]
 
         if my_points - enemy_points > 9:
