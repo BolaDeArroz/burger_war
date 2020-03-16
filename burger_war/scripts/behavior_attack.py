@@ -88,6 +88,7 @@ class CommonFunction:
                 (self.my_pose is not None))
 
     def stop_callback(self, data):
+        print(["stop_callback"], data.data)
         if data.data:
             self.is_stop_receive = True
 
@@ -154,17 +155,18 @@ class EnemyPos:
         self.enemy_pos_from_lider = data
 
     def check(self):
-        pos = 0, 0
+        x, y = 0, 0
 
         if self.enemy_pos_from == 'score':
-            i = self.enemy_pos_from_score.index(max(self.enemy_pos_from_score))
-
-            pos = MK_INFOS[i].point[0], MK_INFOS[i].point[1]
+            for i in range(len(ENEMY_POS_MAP)):
+                x += self.enemy_pos_from_score[i] * ENEMY_POS_MAP[i][0]
+                y += self.enemy_pos_from_score[i] * ENEMY_POS_MAP[i][1]
 
         if self.enemy_pos_from == 'lider':
-            pos = self.enemy_pos_from_lider.x, self.enemy_pos_from_lider.y
+            x = self.enemy_pos_from_lider.x
+            y = self.enemy_pos_from_lider.y
 
-        return pos
+        return x, y
 
 
 class Selecting(smach.State):
@@ -361,24 +363,54 @@ VEL_SPIN = (0, 0, math.pi / 2)
 
 K_MY_MARKER = 10000
 
-K_MY_POSE = 1
+K_MY_POSE = 1.0
 
-K_ENEMY_POS = 1
+K_ENEMY_POS = 0.5
 
 
 MK_INFOS = eval("""
 [
-        MkInfo((-0.530,  0.800, -math.pi / 2), 0.00),
-        MkInfo(( 0.530,  0.800, -math.pi / 2), 0.00),
-        MkInfo((-0.530,  0.260,  math.pi / 2), 0.25),
-        MkInfo(( 0.530,  0.260,  math.pi / 2), 0.25),
-        MkInfo((     0,  0.340, -math.pi / 2), 0.50),
-        MkInfo((-0.340,      0,  0),           0.50),
-        MkInfo(( 0.340,      0,  math.pi),     0.50),
-        MkInfo((     0, -0.340,  math.pi / 2), 0.50),
-        MkInfo((-0.530, -0.260, -math.pi / 2), 0.25),
-        MkInfo(( 0.530, -0.260, -math.pi / 2), 0.25),
-        MkInfo((-0.530, -0.800,  math.pi / 2), 0.00),
-        MkInfo(( 0.530, -0.800,  math.pi / 2), 0.00)
+        MkInfo((-0.530,  0.800, -math.pi / 2), 0.01),
+        MkInfo(( 0.530,  0.800, -math.pi / 2), 0.01),
+        MkInfo((-0.530,  0.260,  math.pi / 2), 0.03),
+        MkInfo(( 0.530,  0.260,  math.pi / 2), 0.03),
+        MkInfo((     0,  0.340, -math.pi / 2), 0.05),
+        MkInfo((-0.340,      0,  0),           0.05),
+        MkInfo(( 0.340,      0,  math.pi),     0.05),
+        MkInfo((     0, -0.340,  math.pi / 2), 0.05),
+        MkInfo((-0.530, -0.260, -math.pi / 2), 0.03),
+        MkInfo(( 0.530, -0.260, -math.pi / 2), 0.03),
+        MkInfo((-0.530, -0.800,  math.pi / 2), 0.01),
+        MkInfo(( 0.530, -0.800,  math.pi / 2), 0.01)
+]
+""")
+
+
+ENEMY_POS_MAP = eval("""
+[
+        (-0.265,  1.325),
+        ( 0.265,  1.325),
+        (-0.795,  0.795),
+        (-0.265,  0.795),
+        ( 0.265,  0.795),
+        ( 0.795,  0.795),
+        (-1.325,  0.265),
+        (-0.795,  0.265),
+        (-0.265,  0.265),
+        ( 0.265,  0.265),
+        ( 0.795,  0.265),
+        ( 1.325,  0.265),
+        (-1.325, -0.265),
+        (-0.795, -0.265),
+        (-0.265, -0.265),
+        ( 0.265, -0.265),
+        ( 0.795, -0.265),
+        ( 1.325, -0.265),
+        (-0.795, -0.795),
+        (-0.265, -0.795),
+        ( 0.265, -0.795),
+        ( 0.795, -0.795),
+        (-0.265, -1.325),
+        ( 0.265, -1.325)
 ]
 """)
