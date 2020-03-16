@@ -368,17 +368,17 @@ K_ENEMY_POS = 1
 
 MK_INFOS = eval("""
 [
-        MkInfo((-530,  800, -math.pi / 2), 0.00),
-        MkInfo(( 530,  800, -math.pi / 2), 0.00),
-        MkInfo((-530,  260,  math.pi / 2), 0.25),
-        MkInfo(( 530,  260,  math.pi / 2), 0.25),
-        MkInfo((   0,  340, -math.pi / 2), 0.50),
-        MkInfo((-340,    0,  0),           0.50),
-        MkInfo(( 340,    0,  math.pi),     0.50),
-        MkInfo((   0, -340,  math.pi / 2), 0.50),
-        MkInfo((-530, -260, -math.pi / 2), 0.25),
-        MkInfo(( 530, -260, -math.pi / 2), 0.25),
-        MkInfo((-530, -800,  math.pi / 2), 0.00),
-        MkInfo(( 530, -800,  math.pi / 2), 0.00)
+        MkInfo((-0.530,  0.800, -math.pi / 2), 0.00),
+        MkInfo(( 0.530,  0.800, -math.pi / 2), 0.00),
+        MkInfo((-0.530,  0.260,  math.pi / 2), 0.25),
+        MkInfo(( 0.530,  0.260,  math.pi / 2), 0.25),
+        MkInfo((     0,  0.340, -math.pi / 2), 0.50),
+        MkInfo((-0.340,      0,  0),           0.50),
+        MkInfo(( 0.340,      0,  math.pi),     0.50),
+        MkInfo((     0, -0.340,  math.pi / 2), 0.50),
+        MkInfo((-0.530, -0.260, -math.pi / 2), 0.25),
+        MkInfo(( 0.530, -0.260, -math.pi / 2), 0.25),
+        MkInfo((-0.530, -0.800,  math.pi / 2), 0.00),
+        MkInfo(( 0.530, -0.800,  math.pi / 2), 0.00)
 ]
 """)
