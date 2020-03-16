@@ -66,13 +66,34 @@ class enemy_pos_from_lider:
         self.last_marker.pose.position.y= 0
         self.enemy_last_marker_pub = rospy.Publisher('enemy_pos_from_lider_last_marker',Marker,queue_size=1)
 
+        # オブジェクトマーカー
+#        self.object_marker=Marker()
+#        self.object_marker.header.frame_id="map"
+#        self.object_marker.ns = "basic_shapes"
+#        self.object_marker.scale.z=0.100
+#        self.object_marker.pose.position.x= 0
+#        self.object_marker.pose.position.y= 0
+#        self.object_marker.scale.x=self.object_marker.scale.y=0.35
+#        self.object_marker.pose.position.x= -0.53
+#        self.object_marker.pose.position.y= -0.53
+#        self.object_marker.scale.x=0.15
+#        self.object_marker.scale.y=0.20
+#        self.object_marker.color.a=1.0
+#        self.object_marker.color.b=1.0
+#        self.object_marker.color.r=1.0
+#        self.object_marker.type=Marker.CUBE
+#        self.object_marker.action = Marker.ADD
+#        self.object_marker_pub = rospy.Publisher('enemy_pos_from_lider_object_marker',Marker,queue_size=1)
+
     def obstacle_callback(self, data):
         self.obstacles=data
 
 
     def run(self):
+
         r=rospy.Rate(5)
         while not rospy.is_shutdown():
+#            self.object_marker_pub.publish(self.object_marker)
             obstacles=self.obstacles
             for obs in obstacles.circles:
                 enemy_pos=Point()
@@ -80,25 +101,27 @@ class enemy_pos_from_lider:
                 enemy_pos.x=-obs.center.y
                 enemy_pos.y= obs.center.x
                 
-
-
                 #敵とオブジェクトを見分けるマージン[m]。値が大きいほど、オブジェクトだと判定するエリアが大きくなる。
-                judge_enemy_mergin=0.0
+                radius_mergin=0.0#半径
+                center_mergin=0.15#センター
+                cornar_mergin=0.2#コーナー
+                wall_mergin=0.0#壁
+                
                 #フィルタリング
                 #障害物の半径が10センチ以上か
-                if(obs.radius>=0.10):
+                if(obs.radius>=0.10-radius_mergin):
                     continue
                 #センターオブジェクトか
-                if(abs(enemy_pos.x) <=0.350+judge_enemy_mergin and abs(enemy_pos.y) <=0.350+judge_enemy_mergin):
+                if(abs(enemy_pos.x) <=0.175+center_mergin and abs(enemy_pos.y) <=0.175+center_mergin):
                 #    print("is_center",enemy_pos)
                     continue
                 #コーナーオブジェクトか
-                if((abs(enemy_pos.x) >=0.420-judge_enemy_mergin and abs(enemy_pos.x) <=0.640+judge_enemy_mergin) and \
-                   (abs(enemy_pos.y) >=0.445-judge_enemy_mergin and abs(enemy_pos.y) <=0.615+judge_enemy_mergin)):
+                if((abs(enemy_pos.x) >=0.430-cornar_mergin and abs(enemy_pos.x) <=0.640+cornar_mergin) and \
+                   (abs(enemy_pos.y) >=0.455-cornar_mergin and abs(enemy_pos.y) <=0.605+cornar_mergin)):
                 #    print("is_corner",enemy_pos)
                     continue
                 #壁か
-                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.650-judge_enemy_mergin):
+                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.650-wall_mergin):
                 #    print("is_wall",enemy_pos)
                     continue
 

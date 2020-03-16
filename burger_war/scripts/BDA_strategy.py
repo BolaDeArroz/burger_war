@@ -126,7 +126,7 @@ class BDA_strategy():
             if abs(x_prev_my_pos - self.my_pose.pos.x) < 0.01:
                 if abs(y_prev_my_pos - self.my_pose.pos.y) < 0.01:
                     stag_count = stag_count+1
-                    # 10 straight count
+                    # 3 straight count
                     if stag_count > 3:
                         print('confirm stagnation!!')
                         self._stagnation = True
@@ -213,7 +213,6 @@ class BDA_strategy():
             _x = self.my_pose.pos.x - self.enemy_pos_from_lider["enemy_pos"].x
             _y = self.my_pose.pos.y - self.enemy_pos_from_lider["enemy_pos"].y
             _dis = math.sqrt(_x*_x + _y*_y)
-            # print('dis', _dis)
             
         except Exception as e:
             print('missing calc_distance_enemy_me: ', e)
@@ -236,7 +235,7 @@ class BDA_strategy():
                 _y = self.my_pose.pos.y - self.enemy_pose_from_camera.pos.y
                 _dis = math.sqrt(_x*_x + _y*_y)
                 # print('dis', _dis)
-                if _dis < 1.0:
+                if _dis < 0.5:
                     return True
                 else:
                     return False
