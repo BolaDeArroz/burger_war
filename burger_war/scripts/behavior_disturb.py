@@ -126,6 +126,9 @@ class GoEnemyPos(smach.State):
         self.enemy_pos_from_lider["enemy_pos"]=data
         self.enemy_pos_from_lider["is_topic_receive"]=True
 
+    def my_pose_callback(self,data):
+        self.my_pose = data
+
     def image_callback(self, data):
         try:
             self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -150,6 +153,9 @@ class GoEnemyPos(smach.State):
         self.image = None
         self.img_sub = rospy.Subscriber("/{}/image_raw".format(self.name), Image, self.image_callback)
         self.bridge = CvBridge()
+        # my pose
+        self.sub_my_pose = rospy.Subscriber('/{}/my_pose'.format(self.name), MyPose, self.my_pose_callback)
+        self.my_pose = MyPose()
 
         #Move base クライアント
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -167,10 +173,15 @@ class GoEnemyPos(smach.State):
         
         # my_move_base.setGoal(self.move_base_client,enemy_pos.x,enemy_pos.x,escape_yaw)
         #for cheese burger
-        
-        escape_yaw= math.pi / 2
-        my_move_base.setGoal(self.move_base_client,-0.0,0.65,escape_yaw)
-        
+        # my pose is right side
+        if self.my_pose.pos.x > 0:
+            escape_yaw= math.pi / 3
+            my_move_base.setGoal(self.move_base_client,0.2,0.45,escape_yaw)
+        # my pose is left side
+        elif self.my_pose.pos.x <= 0:
+            escape_yaw= -math.pi / 3
+            my_move_base.setGoal(self.move_base_client,-0.2,0.45,escape_yaw)
+
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
         r = rospy.Rate(5)
