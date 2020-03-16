@@ -269,7 +269,7 @@ class BDA_strategy():
             result = self.all_state_list[0]
 
         # for cheese burger
-        if cheese_points and enemy_points<=1 and my_points>8:
+        if cheese_points and enemy_points<=1 and my_points>7 and self.rem_time.data.to_sec()>20:
             result = self.all_state_list[2]
         # check stagnation
         if self._stagnation:
@@ -310,7 +310,7 @@ class BDA_strategy():
                     preserve_count = 35
                 # change to disturb
                 elif state == self.all_state_list[2]:
-                    preserve_count = 5
+                    preserve_count = 10
                 else:
                     preserve_count = 0
                 stop_send_result = True

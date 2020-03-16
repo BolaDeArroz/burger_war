@@ -18,6 +18,7 @@ from cv_bridge import CvBridge, CvBridgeError
 
 from image_function import get_tracking_info
 from calc_motion_planning import rotation_operate, check_possession_marker
+from burger_war.msg import MyPose 
 
 import my_move_base
 class bevavior_disturb(smach.State):
@@ -175,12 +176,12 @@ class GoEnemyPos(smach.State):
         #for cheese burger
         # my pose is right side
         if self.my_pose.pos.x > 0:
-            escape_yaw= math.pi / 3
-            my_move_base.setGoal(self.move_base_client,0.2,0.45,escape_yaw)
+            escape_yaw= -math.pi*2 / 2
+            my_move_base.setGoal(self.move_base_client,0.35,0.35,escape_yaw)
         # my pose is left side
         elif self.my_pose.pos.x <= 0:
-            escape_yaw= -math.pi / 3
-            my_move_base.setGoal(self.move_base_client,-0.2,0.45,escape_yaw)
+            escape_yaw= math.pi/ 6
+            my_move_base.setGoal(self.move_base_client,-0.35,0.35,escape_yaw)
 
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
