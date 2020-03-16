@@ -6,8 +6,21 @@ import roslib
 import rospy
 import smach
 import smach_ros
-from std_msgs.msg import Bool 
+import tf
+import actionlib
+import actionlib_msgs
 
+from sensor_msgs.msg import Image
+from std_msgs.msg import Bool,Float32MultiArray
+from geometry_msgs.msg import Point,Twist
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from cv_bridge import CvBridge, CvBridgeError
+
+from image_function import get_tracking_info
+from calc_motion_planning import rotation_operate, check_possession_marker
+from burger_war.msg import MyPose 
+
+import my_move_base
 class bevavior_disturb(smach.State):
     def __init__(self):
 
@@ -15,7 +28,7 @@ class bevavior_disturb(smach.State):
         #内部のステートマシンsm_subを定義
         #この内部ステートマシンは,outcome
         self.sm_sub = smach.StateMachine(outcomes=['outcome'])
-        
+        self.sm_sub.userdata.enemy_pos=Point()
         # sm_subにステートを追加
         # ステートにできるのは、smach.Stateを継承したクラスのみ。(だと思う)
         # smach.StateMachine.addでステートを追加する
@@ -25,15 +38,17 @@ class bevavior_disturb(smach.State):
         #ってな感じで、遷移先が複数あるならtransitionsをどんどん追加していく
         with self.sm_sub:
             #最初にaddしたステートが開始時のステート
-            smach.StateMachine.add('State_A', State_A(), 
-                                  transitions={'outcome1':'State_B', 
-                                               'outcome2':'outcome'}) #←sm_sub自体の終了
-            smach.StateMachine.add('State_B', State_B(), 
-                                  transitions={'outcome1':'State_A',
-                                               'outcome2':'outcome'}) #←sm_sub自体の終了
+            smach.StateMachine.add('AroundDisturb', AroundDisturb(), 
+                                  transitions={'outcome1':'GoEnemyPos', 
+                                               'outcome2':'outcome'},
+                                  remapping={'enemy_pos_out':'enemy_pos'}) #←sm_sub自体の終了
+            smach.StateMachine.add('GoEnemyPos', GoEnemyPos(), 
+                                  transitions={'outcome1':'AroundDisturb',
+                                               'outcome2':'outcome'},
+                                  remapping={'enemy_pos_in':'enemy_pos'}) #←sm_sub自体の終了
 
         #下2行はsmach_viewerでステートを確認するために必要
-        sis = smach_ros.IntrospectionServer('server_name', self.sm_sub, '/SM_XXX')
+        sis = smach_ros.IntrospectionServer('server_name', self.sm_sub, '/SM_Disturb')
         sis.start()
         
     def execute(self,userdata):    
@@ -43,11 +58,21 @@ class bevavior_disturb(smach.State):
 
 
 
-class State_A(smach.State):
+class AroundDisturb(smach.State):
+    def enemy_pos_from_lider_callback(self,data):
+        self.enemy_pos_from_lider["enemy_pos"]=data
+        self.enemy_pos_from_lider["is_topic_receive"]=True
+
+    def enemy_pose_from_camera_callback(self, data):
+        self.enemy_pose_from_camera = data
+
+    def enemy_pos_from_score_callback(self,data):
+        self.enemy_pos_from_score=data
 
     def __init__(self):
         #このステートの返り値リストを定義。
-        smach.State.__init__(self, outcomes=['outcome1','outcome2'])
+        smach.State.__init__(self, outcomes=['outcome1','outcome2'],
+                                    output_keys=['enemy_pos_out'])
         
         #停止トピックを受け取るための定義。 
         robot_name=''
@@ -55,27 +80,66 @@ class State_A(smach.State):
         self.stop_sub = rospy.Subscriber('/{}/state_stop'.format(self.name), Bool, self.stop_callback)
         self.is_stop_receive=False
 
+        # liderから敵位置推定トピックを受け取るための定義
+        self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider'.format(self.name), Point, self.enemy_pos_from_lider_callback)
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
+
+        # scoreから敵位置推定トピックを受け取るための定義
+        self.sub_enemy_pos_from_score = rospy.Subscriber('/{}/enemy_pos_from_score'.format(self.name), Float32MultiArray, self.enemy_pos_from_score_callback)
+        self.enemy_pos_from_score=Float32MultiArray()
+
+
     def execute(self,userdata):
-        #ステート1の処理
-        rospy.sleep(3)
+        #パラメータ初期化
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
 
-        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
-        if self.is_stop_receive:
-            self.is_stop_receive=False
-            # 受け取っていたら終了。(終了処理とかもここに)
-            return 'outcome2'
+        print('+++++++++++++++++++ Disturb +++++++++++++++++++++++++++')
+        # rospy終了か、停止トピックを受け取ったらループ抜ける。
+        r=rospy.Rate(5)
+        self.is_stop_receive=False
+        while (not rospy.is_shutdown()) and (self.is_stop_receive==False):
+            #敵の位置を推測したらループを抜ける
+            #TODO:score情報からの敵位置
+            if self.enemy_pos_from_lider["is_topic_receive"]:
+                userdata.enemy_pos_out=self.enemy_pos_from_lider["enemy_pos"]
+                # TODO
+                return 'outcome1'
+            else:
+                return 'outcome1'
+            
+            r.sleep()
+        
+        self.is_stop_receive=False
 
-        return 'outcome1'
+        return 'outcome2'
 
 
     def stop_callback(self,data):
         self.is_stop_receive=True
 
 
-class State_B(smach.State):
+class GoEnemyPos(smach.State):
+
+    def stop_callback(self,data):
+        self.is_stop_receive=True
+
+    def enemy_pos_from_lider_callback(self,data):
+        self.enemy_pos_from_lider["enemy_pos"]=data
+        self.enemy_pos_from_lider["is_topic_receive"]=True
+
+    def my_pose_callback(self,data):
+        self.my_pose = data
+
+    def image_callback(self, data):
+        try:
+            self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        except CvBridgeError as e:
+            print("image_callback error: ", e)
+
 
     def __init__(self):
-        smach.State.__init__(self, outcomes=['outcome1','outcome2'])
+        smach.State.__init__(self, outcomes=['outcome1','outcome2'],
+                                    input_keys=['enemy_pos_in'])
         
         #停止トピックを受け取るための定義。 
         robot_name=''
@@ -83,18 +147,74 @@ class State_B(smach.State):
         self.stop_sub = rospy.Subscriber('/{}/state_stop'.format(self.name), Bool, self.stop_callback)
         self.is_stop_receive=False
 
+        # liderから敵位置推定トピックを受け取るための定義
+        self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider'.format(self.name), Point, self.enemy_pos_from_lider_callback)
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
+        # for tracking
+        self.image = None
+        self.img_sub = rospy.Subscriber("/{}/image_raw".format(self.name), Image, self.image_callback)
+        self.bridge = CvBridge()
+        # my pose
+        self.sub_my_pose = rospy.Subscriber('/{}/my_pose'.format(self.name), MyPose, self.my_pose_callback)
+        self.my_pose = MyPose()
+
+        #Move base クライアント
+        self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
+
+        # velocity publisher
+        self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
+
+
     def execute(self,userdata):
-        #ステート1の処理
-        rospy.sleep(3)
+        #パラメータ初期化
+        self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
 
-        # 処理中の終了できる箇所で、停止トピックを受け取ったか確認。
-        if self.is_stop_receive:
-            self.is_stop_receive=False
-            # 受け取っていたら終了。(終了処理とかもここに)
-            return 'outcome2'
+        #逃げる位置計算
+        enemy_pos=userdata.enemy_pos_in
+        
+        # my_move_base.setGoal(self.move_base_client,enemy_pos.x,enemy_pos.x,escape_yaw)
+        #for cheese burger
+        # my pose is right side
+        if self.my_pose.pos.x > 0:
+            escape_yaw= -math.pi*2 / 2
+            my_move_base.setGoal(self.move_base_client,0.35,0.35,escape_yaw)
+        # my pose is left side
+        elif self.my_pose.pos.x <= 0:
+            escape_yaw= math.pi/ 6
+            my_move_base.setGoal(self.move_base_client,-0.35,0.35,escape_yaw)
 
-        return 'outcome1'
-
-
-    def stop_callback(self,data):
-        self.is_stop_receive=True
+        # rospy終了か、ゴールに着いたらループ抜ける。
+        self.is_stop_receive=False
+        r = rospy.Rate(5)
+        while (not rospy.is_shutdown()) and \
+                self.move_base_client.get_state() in [  actionlib_msgs.msg.GoalStatus.ACTIVE,\
+                                                        actionlib_msgs.msg.GoalStatus.PENDING]:
+            
+            #逃げる途中で,ストップトピックを受け取った場合
+            if self.is_stop_receive == True:
+                #ループ抜ける
+                #目的地設定キャンセル
+                self.move_base_client.cancel_goal()
+                #移動停止
+                for _ in range(5):
+                    self.vel_pub.publish(Twist())
+                    r.sleep()
+                self.is_stop_receive=False
+                return 'outcome2'
+            # rotate
+            # tracking enemy
+            if self.image is not None:
+                tracking_info = get_tracking_info(self.image)
+                if tracking_info == {}:
+                    continue
+                if tracking_info['center'][0] > 370:
+                    twist = rotation_operate(1)
+                elif tracking_info['center'][0] < 270:
+                    twist = rotation_operate(2)
+                else:
+                    twist = rotation_operate(0)
+            self.vel_pub.publish(twist)
+            #TODO:ゴールが壁の中になった時の対応
+            r.sleep()
+        #目的地についた場合
+        return 'outcome2'

@@ -36,8 +36,10 @@ class bevavior_escape(smach.State):
                                   remapping={'enemy_pos_out':'enemy_pos'})
             smach.StateMachine.add('GoToEscapePoint', GoToEscapePoint(), 
                                   transitions={'is_Gone'          :'CalcEnemyPos',
+                                               'is_NearEnemyFound':'GoToEscapePoint',
                                                'is_receiveStopSig':'outcome'},
-                                  remapping={'enemy_pos_in':'enemy_pos'})
+                                  remapping={'enemy_pos_in':'enemy_pos',
+                                             'enemy_pos_out':'enemy_pos'})
 
         #下2行はsmach_viewerでステートを確認するために必要                                      
         sis = smach_ros.IntrospectionServer('server_name', self.sm_sub, 'SM_ESCAPE')
@@ -76,7 +78,7 @@ class CalcEnemyPos(smach.State):
         self.is_stop_receive=False
 
         # liderから敵位置推定トピックを受け取るための定義
-        self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider'.format(self.name), Point, self.enemy_pos_from_lider_callback)
+        self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider_last'.format(self.name), Point, self.enemy_pos_from_lider_callback)
         self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
 
         # scoreから敵位置推定トピックを受け取るための定義
@@ -120,8 +122,9 @@ class GoToEscapePoint(smach.State):
         return d
 
     def __init__(self):
-        smach.State.__init__(self,  outcomes=['is_Gone','is_receiveStopSig'],
-                                    input_keys=['enemy_pos_in'])
+        smach.State.__init__(self,  outcomes=['is_Gone','is_NearEnemyFound','is_receiveStopSig'],
+                                    input_keys=['enemy_pos_in'],
+                                    output_keys=['enemy_pos_out'])
 
         robot_name=''
         self.name = robot_name
@@ -145,7 +148,8 @@ class GoToEscapePoint(smach.State):
 
 
     def calc_escape_pos_v1(self,x,y):
-            return -x,-y
+            #ゴール時の方向はマップ中心を向く
+            return -x,-y,math.atan2(y,x)-math.pi
 
     def calc_escape_pos_v2(self,x,y):
         #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
@@ -159,7 +163,23 @@ class GoToEscapePoint(smach.State):
                         {"x": 0.5,"y": 0.8}
         ]
         idx=(int(round(math.degrees(math.atan2(-x,y))/45))+4) % len(escape_pos_list) 
-        return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],
+        #ゴール時の方向はマップ中心を向く
+        return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],math.atan2(escape_pos_list[idx]["y"],escape_pos_list[idx]["x"])-math.pi
+
+    def calc_escape_pos_v3(self,x,y):
+        #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
+        escape_pos_list=[{"x": 0.0,"y": 0.5, "yaw":-math.pi/2},\
+                        {"x":-0.53,"y": 0.8, "yaw":-math.pi/2}, \
+                        {"x":-0.50,"y": 0.0, "yaw":0}, \
+                        {"x":-0.53,"y":-0.8, "yaw":math.pi/2},\
+                        {"x": 0.00,"y":-0.5, "yaw":math.pi/2},\
+                        {"x": 0.53,"y":-0.8, "yaw":math.pi/2},\
+                        {"x": 0.50,"y": 0.0, "yaw":math.pi},\
+                        {"x": 0.53,"y": 0.8,"yaw":-math.pi/2}\
+        ]
+        idx=(int(round(math.degrees(math.atan2(-x,y))/45))+4) % len(escape_pos_list) 
+        #ゴール時の方向はマップ中心を向く
+        return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],escape_pos_list[idx]["yaw"]
 
 
     def execute(self,userdata):
@@ -168,22 +188,21 @@ class GoToEscapePoint(smach.State):
 
         #逃げる位置計算
         enemy_pos=userdata.enemy_pos_in
-        # print("enemy_pos",enemy_pos)
-        #中心挟んで相手の反対地点に逃げるパティーン
-        #escape_pos_x,escape_pos_y=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
+        print("enemy_pos",enemy_pos)
+        #中心挟んで相手の反対地点に逃げるパターン
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
         
-        #相手の位置によって反対側の決まった地点に逃げるパティーン
-        escape_pos_x,escape_pos_y=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
+        #相手の位置によって反対側の決まった地点に逃げるパターン
+        escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
         
+        #相手の位置によって反対側の決まった地点に逃げるパターン
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v3(enemy_pos.x,enemy_pos.y)
 
-        #ゴール時の方向はマップ中心を向く用に変更
-        escape_yaw=math.atan2(escape_pos_y,escape_pos_x)-math.pi
-        #print(escape_pos_x,escape_pos_y)
+       
+        #print(escape_pos_x,escape_pos_y,escape_yaw)
 
         #ゴール設定
         my_move_base.setGoal(self.move_base_client,escape_pos_x,escape_pos_y,escape_yaw)
-        #DEBUG:
-        #my_move_base.setGoal(self.move_base_client,-0.45,-0.45,escape_yaw)
         
         # rospy終了か、ゴールに着いたらループ抜ける。
         self.is_stop_receive=False
@@ -207,10 +226,13 @@ class GoToEscapePoint(smach.State):
             #逃げる途中で、敵と遭遇した場合
             if self.enemy_pos_from_lider["is_topic_receive"]==True:
                 #前回の敵位置との距離を計算
-                dist=self.get_distance(enemy_pos.x,enemy_pos.y,self.enemy_pos_from_lider["enemy_pos"].x,self.enemy_pos_from_lider["enemy_pos"].y)
+                dist=self.get_distance(                          enemy_pos.x,                             enemy_pos.y,\
+                                    self.enemy_pos_from_lider["enemy_pos"].x,self.enemy_pos_from_lider["enemy_pos"].y)
                 # print("dist",dist)
                 if dist >= self.CHANGE_ESCAPE_POS_TH: #しきい値を上回っていた場合
-                    return 'is_Gone' #抜ける。再計算されて、目的地が変更される。
+                    userdata.enemy_pos_out=self.enemy_pos_from_lider["enemy_pos"]
+                    self.move_base_client.cancel_goal()
+                    return 'is_NearEnemyFound' #抜ける。再計算されて、目的地が変更される。
 
             
             #TODO:ゴールが壁の中になった時の対応

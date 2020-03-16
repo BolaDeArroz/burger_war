@@ -40,6 +40,10 @@
 
     <include file="$(find burger_war)/launch/obstacle_detector.launch">
     </include>
+      <!-- laser_filter --><!--/scanからポール範囲を除去した/scan_filterdをパブリッシュする-->
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="laser_filter">
+        <rosparam command="load" file="$(find laser_filters)/config/laser_filter1.yaml" />
+    </node>
     <!-- END my program node -->
 
 

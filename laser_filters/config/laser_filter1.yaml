@@ -1,0 +1,6 @@
+scan_filter_chain:
+- name: poll_filter1
+  type: LaserScanAngularBoundsFilter
+  params:
+    lower_angle:  3.13
+    upper_angle:  3.17

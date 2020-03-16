@@ -13,11 +13,11 @@ Panels:
         - /LaserScan1
         - /Map1
         - /Planner Plan1
-        - /Planner Plan1/Status1
         - /Global Map1
         - /TebPlanner1
         - /TebPlanner1/Marker1
         - /Marker1
+        - /Marker2
       Splitter Ratio: 0.5
     Tree Height: 442
   - Class: rviz/Selection
@@ -452,7 +452,15 @@ Visualization Manager:
       Marker Topic: /enemy_pos_from_lider_marker
       Name: Marker
       Namespaces:
-        {}
+        basic_shapes: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /enemy_pos_from_lider_last_marker
+      Name: Marker
+      Namespaces:
+        basic_shapes: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -485,7 +493,6 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-
       Scale: 205.695999
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
