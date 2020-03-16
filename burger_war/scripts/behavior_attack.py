@@ -162,7 +162,7 @@ class EnemyPos:
             pos = MK_INFOS[i].point[0], MK_INFOS[i].point[1]
 
         if self.enemy_pos_from == 'lider':
-            pos = enemy_pos_from_lider.x, enemy_pos_from_lider.y
+            pos = self.enemy_pos_from_lider.x, self.enemy_pos_from_lider.y
 
         return pos
 
