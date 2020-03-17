@@ -264,7 +264,7 @@ class BDA_strategy():
         # for cheese burger
         if cheese_points and enemy_points<=1 and my_points>7 and self.rem_time.data.to_sec()>20:
             result = self.all_state_list[2]
-        if cheese_points and enemy_points<=1 and self.rem_time.data.to_sec()<40:
+        if cheese_points and enemy_points<=1 and self.rem_time.data.to_sec()<80:
             result = self.all_state_list[0]
 
 
