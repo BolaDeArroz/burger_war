@@ -88,7 +88,6 @@ class CommonFunction:
                 (self.my_pose is not None))
 
     def stop_callback(self, data):
-        print(["stop_callback"], data.data)
         if data.data:
             self.is_stop_receive = True
 
@@ -180,6 +179,8 @@ class Selecting(smach.State):
 
         self.func = func
 
+        self.is_first = True
+
     def execute(self, userdata):
         self.func.reset()
 
@@ -212,6 +213,18 @@ class Selecting(smach.State):
         return None
 
     def select(self, userdata):
+        if self.is_first:
+            self.select_first(userdata)
+
+            self.is_first = False
+
+        else:
+            self.select_nth(userdata)
+
+    def select_first(self, userdata):
+        userdata.target = TARGET_FIRST
+
+    def select_nth(self, userdata):
         mypos = self.func.check_my_pose()
         enemy = self.func.check_enemy_pos()
 
@@ -359,6 +372,9 @@ TIMEOUT_READING = 5
 
 
 VEL_SPIN = (0, 0, math.pi / 2)
+
+
+TARGET_FIRST = 10
 
 
 K_MY_MARKER = 10000
