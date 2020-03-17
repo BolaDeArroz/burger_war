@@ -9,7 +9,7 @@ import smach
 import smach_ros
 import tf
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Point, Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Bool, Float32MultiArray, Int32MultiArray
 
@@ -60,7 +60,7 @@ class CommonFunction:
 
         self.score = None
 
-        self.enemy_pos_from_score = None
+        self.enemy_pos = EnemyPos()
 
         self.my_pose = None
 
@@ -73,8 +73,6 @@ class CommonFunction:
         rospy.Subscriber(
                 'score', Int32MultiArray, self.score_callback)
         rospy.Subscriber(
-                'enemy_pos_from_score', Float32MultiArray, self.epfs_callback)
-        rospy.Subscriber(
                 'my_pose', MyPose, self.my_pose_callback)
 
     def reset(self):
@@ -86,18 +84,16 @@ class CommonFunction:
 
     def is_data_exists(self):
         return ((self.score is not None) and
-                (self.enemy_pos_from_score is not None) and
+                (self.enemy_pos.is_data_exists()) and
                 (self.my_pose is not None))
 
     def stop_callback(self, data):
+        print(["stop_callback"], data.data)
         if data.data:
             self.is_stop_receive = True
 
     def score_callback(self, data):
         self.score = data.data
-
-    def epfs_callback(self, data):
-        self.enemy_pos_from_score = data.data
 
     def my_pose_callback(self,data):
         self.my_pose = data
@@ -108,8 +104,8 @@ class CommonFunction:
     def check_score(self):
         return [i for i, e in enumerate(self.score) if e > 0]
 
-    def check_enemy_pos_from_score(self):
-        return self.enemy_pos_from_score
+    def check_enemy_pos(self):
+        return self.enemy_pos.check()
 
     def check_my_pose(self):
         return self.my_pose
@@ -118,7 +114,7 @@ class CommonFunction:
         return self.client.get_state()
 
     def set_goal(self, x, y, yaw):
-        my_move_base.setGoal(self.client, x / 1000.0, y / 1000.0, yaw)
+        my_move_base.setGoal(self.client, x, y, yaw)
 
     def pub_vel(self, x=0, y=0, a=0):
         msg = Twist()
@@ -129,6 +125,48 @@ class CommonFunction:
         msg.angular.z = a
 
         self.cmd_vel.publish(msg)
+
+
+class EnemyPos:
+    def __init__(self):
+        self.enemy_pos_from = None
+
+        self.enemy_pos_from_score = None
+        self.enemy_pos_from_lider = None
+
+        rospy.Subscriber(
+                'enemy_pos_from_score', Float32MultiArray, self.score_callback)
+        rospy.Subscriber(
+                'enemy_pos_from_lider', Point, self.lider_callback)
+
+    def is_data_exists(self):
+        return self.enemy_pos_from is not None
+
+    def score_callback(self, data):
+        if ((self.enemy_pos_from_score is None) or
+            (max(data.data) > max(self.enemy_pos_from_score))):
+            self.enemy_pos_from = 'score'
+
+        self.enemy_pos_from_score = data.data
+
+    def lider_callback(self, data):
+        self.enemy_pos_from = 'lider'
+
+        self.enemy_pos_from_lider = data
+
+    def check(self):
+        x, y = 0, 0
+
+        if self.enemy_pos_from == 'score':
+            for i in range(len(ENEMY_POS_MAP)):
+                x += self.enemy_pos_from_score[i] * ENEMY_POS_MAP[i][0]
+                y += self.enemy_pos_from_score[i] * ENEMY_POS_MAP[i][1]
+
+        if self.enemy_pos_from == 'lider':
+            x = self.enemy_pos_from_lider.x
+            y = self.enemy_pos_from_lider.y
+
+        return x, y
 
 
 class Selecting(smach.State):
@@ -175,29 +213,29 @@ class Selecting(smach.State):
 
     def select(self, userdata):
         mypos = self.func.check_my_pose()
-        enemy = self.func.check_enemy_pos_from_score()
+        enemy = self.func.check_enemy_pos()
 
         costs = [x.bcost for x in MK_INFOS]
 
         for i in self.func.check_score():
-
             if i < len(MK_INFOS):
                 costs[i] += K_MY_MARKER
 
         for i in range(len(costs)):
-            costs[i] += self.distance(MK_INFOS[i].point, mypos) * K_MY_POSE
+            p = MK_INFOS[i].point
 
-            for j in MK_INFOS[i].nears:
-                costs[i] += enemy[j] * K_ENEMY_POS_FROM_SCORE
+            costs[i] += self.distance(p, mypos.pos.x, mypos.pos.y) * K_MY_POSE
+
+            costs[i] -= self.distance(p, enemy[0], enemy[1]) * K_ENEMY_POS
 
         cost = min(costs)
 
         if cost < K_MY_MARKER:
             userdata.target = costs.index(cost)
 
-    def distance(self, point, my_pose):
-        dx = point[0] - my_pose.pos.x * 1000
-        dy = point[1] - my_pose.pos.y * 1000
+    def distance(self, point, x, y):
+        dx = point[0] - x
+        dy = point[1] - y
 
         return math.sqrt(dx * dx + dy * dy)
 
@@ -309,10 +347,9 @@ class Reading(smach.State):
 
 
 class MkInfo:
-    def __init__(self, point, bcost, nears):
+    def __init__(self, point, bcost):
         self.point = point
         self.bcost = bcost
-        self.nears = nears
 
 
 RATE = 10
@@ -326,24 +363,54 @@ VEL_SPIN = (0, 0, math.pi / 2)
 
 K_MY_MARKER = 10000
 
-K_ENEMY_POS_FROM_SCORE = 1
+K_MY_POSE = 1.0
 
-K_MY_POSE = 0.01
+K_ENEMY_POS = 0.5
 
 
 MK_INFOS = eval("""
 [
-        MkInfo((-530,  800, -math.pi / 2), 0.00, [ 2,  3]),
-        MkInfo(( 530,  800, -math.pi / 2), 0.00, [ 4,  5]),
-        MkInfo((-530,  260,  math.pi / 2), 0.25, [ 7,  8]),
-        MkInfo(( 530,  260,  math.pi / 2), 0.25, [ 9, 10]),
-        MkInfo((   0,  340, -math.pi / 2), 0.50, [ 8,  9]),
-        MkInfo((-340,    0,  0),           0.50, [ 8, 14]),
-        MkInfo(( 340,    0,  math.pi),     0.50, [ 9, 15]),
-        MkInfo((   0, -340,  math.pi / 2), 0.50, [14, 15]),
-        MkInfo((-530, -260, -math.pi / 2), 0.25, [13, 14]),
-        MkInfo(( 530, -260, -math.pi / 2), 0.25, [15, 16]),
-        MkInfo((-530, -800,  math.pi / 2), 0.00, [18, 19]),
-        MkInfo(( 530, -800,  math.pi / 2), 0.00, [20, 21])
+        MkInfo((-0.530,  0.800, -math.pi / 2), 0.01),
+        MkInfo(( 0.530,  0.800, -math.pi / 2), 0.01),
+        MkInfo((-0.530,  0.260,  math.pi / 2), 0.03),
+        MkInfo(( 0.530,  0.260,  math.pi / 2), 0.03),
+        MkInfo((     0,  0.340, -math.pi / 2), 0.05),
+        MkInfo((-0.340,      0,  0),           0.05),
+        MkInfo(( 0.340,      0,  math.pi),     0.05),
+        MkInfo((     0, -0.340,  math.pi / 2), 0.05),
+        MkInfo((-0.530, -0.260, -math.pi / 2), 0.03),
+        MkInfo(( 0.530, -0.260, -math.pi / 2), 0.03),
+        MkInfo((-0.530, -0.800,  math.pi / 2), 0.01),
+        MkInfo(( 0.530, -0.800,  math.pi / 2), 0.01)
+]
+""")
+
+
+ENEMY_POS_MAP = eval("""
+[
+        (-0.265,  1.325),
+        ( 0.265,  1.325),
+        (-0.795,  0.795),
+        (-0.265,  0.795),
+        ( 0.265,  0.795),
+        ( 0.795,  0.795),
+        (-1.325,  0.265),
+        (-0.795,  0.265),
+        (-0.265,  0.265),
+        ( 0.265,  0.265),
+        ( 0.795,  0.265),
+        ( 1.325,  0.265),
+        (-1.325, -0.265),
+        (-0.795, -0.265),
+        (-0.265, -0.265),
+        ( 0.265, -0.265),
+        ( 0.795, -0.265),
+        ( 1.325, -0.265),
+        (-0.795, -0.795),
+        (-0.265, -0.795),
+        ( 0.265, -0.795),
+        ( 0.795, -0.795),
+        (-0.265, -1.325),
+        ( 0.265, -1.325)
 ]
 """)
