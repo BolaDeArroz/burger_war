@@ -309,7 +309,7 @@ class BDA_strategy():
                     preserve_count = 0
                 # change to escape
                 elif state == self.all_state_list[1]:
-                    preserve_count = 35
+                    preserve_count = 25
                 # change to disturb
                 elif state == self.all_state_list[2]:
                     preserve_count = 10
