@@ -203,6 +203,8 @@ class BDA_strategy():
 
     def calc_distance_enemy_me(self):
         _dis = 1.0
+        if self.enemy_pos_from_lider["is_topic_receive"] ==False:
+            return _dis
         try:
             _x = self.my_pose.pos.x - self.enemy_pos_from_lider["enemy_pos"].x
             _y = self.my_pose.pos.y - self.enemy_pos_from_lider["enemy_pos"].y
