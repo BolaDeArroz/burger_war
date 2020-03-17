@@ -110,17 +110,21 @@ class EnemyFinderFromCamera():
 
     def run(self):
         r=rospy.Rate(5)
+        """
         path = '/home/ctu/rhc_branch_ws/src/burger_war/position_logs.csv'
         with open(path, 'w') as f:
             writer = csv.writer(f)
             writer.writerow(['x', 'y', 'z', 'th', 'ds'])
+        """
         while not rospy.is_shutdown():
             enemy_coordinate_list = self.calc_enemy_pose()
             try:
                 # print('my_pose',  self.my_pose.pos)
+                """
                 with open(path, 'a') as f:
                     writer = csv.writer(f)
                     writer.writerow([self.my_pose.pos.x, self.my_pose.pos.y, self.my_pose.pos.z, self.theta, self.ds])
+                """
                 if enemy_coordinate_list != []:
                     # 
                     try:
