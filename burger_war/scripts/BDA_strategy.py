@@ -182,23 +182,17 @@ class BDA_strategy():
             elif index < 14:
                 if value == -1:
                     enemy_points = enemy_points+3
-                else:
                     leftover_points = leftover_points+3
             elif index == 14:
                 if value == -1:
                     enemy_points = enemy_points+5
-                else:
                     leftover_points = leftover_points+5
             elif index < 17:
                 if value == 1:
                     my_points =my_points+3
-                else:
-                    leftover_points = leftover_points+3
             elif index == 17:
                 if value == 1:
                     my_points = my_points+5
-                else:
-                    leftover_points = leftover_points+5
             
             # for cheese
             if index == 4 and value == -1:
@@ -270,6 +264,10 @@ class BDA_strategy():
         # for cheese burger
         if cheese_points and enemy_points<=1 and my_points>7 and self.rem_time.data.to_sec()>20:
             result = self.all_state_list[2]
+
+        # lost my marker points
+        if leftover_points >= 11:
+            result = self.all_state_list[0]
         # check stagnation
         if self._stagnation:
             result = self.all_state_list[2]

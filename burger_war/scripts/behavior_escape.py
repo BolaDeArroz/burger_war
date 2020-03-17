@@ -13,6 +13,7 @@ import actionlib_msgs
 from std_msgs.msg import Bool,Float32MultiArray
 from geometry_msgs.msg import Point,Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from burger_war.msg import MyPose 
 
 import my_move_base
 class bevavior_escape(smach.State):
@@ -117,6 +118,9 @@ class GoToEscapePoint(smach.State):
         self.enemy_pos_from_lider["enemy_pos"]=data
         self.enemy_pos_from_lider["is_topic_receive"]=True
 
+    def my_pose_callback(self,data):
+        self.my_pose=data
+
     def get_distance(self,x1, y1, x2, y2):
         d = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
         return d
@@ -136,6 +140,10 @@ class GoToEscapePoint(smach.State):
         # liderから敵位置推定トピックを受け取るための定義
         self.sub_enemy_pos_from_lider = rospy.Subscriber('/{}/enemy_pos_from_lider'.format(self.name), Point, self.enemy_pos_from_lider_callback)
         self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
+
+        # 自己位置トピックを受け取るための定義
+        self.sub_my_pose = rospy.Subscriber('/{}/my_pose'.format(self.name), MyPose, self.my_pose_callback)
+        self.my_pose=MyPose()
 
         #Move base クライアント
         self.move_base_client = actionlib.SimpleActionClient('move_base',MoveBaseAction)
@@ -167,7 +175,7 @@ class GoToEscapePoint(smach.State):
         return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],math.atan2(escape_pos_list[idx]["y"],escape_pos_list[idx]["x"])-math.pi
 
     def calc_escape_pos_v3(self,x,y):
-        #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる
+        #マップを8分割45°区切りで分けて、敵の座標によってその反対側の決められた地点に逃げる(点数取れる位置版)
         escape_pos_list=[{"x": 0.0,"y": 0.5, "yaw":-math.pi/2},\
                         {"x":-0.53,"y": 0.8, "yaw":-math.pi/2}, \
                         {"x":-0.50,"y": 0.0, "yaw":0}, \
@@ -178,8 +186,43 @@ class GoToEscapePoint(smach.State):
                         {"x": 0.53,"y": 0.8,"yaw":-math.pi/2}\
         ]
         idx=(int(round(math.degrees(math.atan2(-x,y))/45))+4) % len(escape_pos_list) 
-        #ゴール時の方向はマップ中心を向く
+        #ゴール時の方向は決められた方向を向く
         return escape_pos_list[idx]["x"],escape_pos_list[idx]["y"],escape_pos_list[idx]["yaw"]
+
+    def calc_escape_pos_v4(self,en_x,en_y,my_x,my_y):
+        #マップを8分割45°区切りで分けて、敵の座標と自分の座標によって決められた位置に逃げる
+        #敵より自分のほうが近い地点の中で敵から最も遠い地点
+        escape_pos_list=[{"x": 0.0,"y": 1.3},\
+                        {"x":-0.5,"y": 0.8},\
+                        {"x":-1.3,"y": 0.0},\
+                        {"x":-0.5,"y":-0.8},\
+                        {"x": 0.0,"y":-1.3},\
+                        {"x": 0.5,"y":-0.8},\
+                        {"x": 1.3,"y": 0.0},\
+                        {"x": 0.5,"y": 0.8}
+        ]
+        #敵から地点の距離
+        escape_dist_from_enemy=[self.get_distance(en_x,en_y,pos["x"],pos["y"]) for pos in escape_pos_list ]
+        #print("enemy_=",escape_dist_from_enemy)
+        #自分から地点の距離
+        escape_dist_from_my=   [self.get_distance(my_x,my_y,pos["x"],pos["y"]) for pos in escape_pos_list ]
+        #print("my_=",escape_dist_from_my)
+        #敵-自分
+        compare_dist=          [en-my for en,my in zip(escape_dist_from_enemy,escape_dist_from_my)] 
+        print("en_my_=",compare_dist)
+        
+        #候補を自分のほうが近い地点
+        #      現在地点から一定以上離れた地点(スタック防止のため)
+        # のみに絞る
+        enable_pos_list=[pos for comp_dist,dist_from_my,pos in zip(compare_dist,escape_dist_from_my,escape_pos_list) if comp_dist>=0 and dist_from_my >=0.50]
+        if len(enable_pos_list) >=1: 
+            enable_pos_dist=[self.get_distance(en_x,en_y,pos["x"],pos["y"]) for pos in enable_pos_list]
+            idx=enable_pos_dist.index(max(enable_pos_dist))
+        else:#候補座標無い場合 
+            #v2と同じ座標
+            idx=(int(round(math.degrees(math.atan2(-en_x,en_y))/45))+4) % len(escape_pos_list) 
+        #ゴール時の方向はマップ中心を向く
+        return enable_pos_list[idx]["x"],enable_pos_list[idx]["y"],math.atan2(enable_pos_list[idx]["y"],enable_pos_list[idx]["x"])-math.pi
 
 
     def execute(self,userdata):
@@ -193,11 +236,13 @@ class GoToEscapePoint(smach.State):
         #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
         
         #相手の位置によって反対側の決まった地点に逃げるパターン
-        escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
         
         #相手の位置によって反対側の決まった地点に逃げるパターン
         #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v3(enemy_pos.x,enemy_pos.y)
 
+        #相手の位置によって反対側の決まった地点に逃げるパターン
+        escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v4(enemy_pos.x,enemy_pos.y,self.my_pose.pos.x,self.my_pose.pos.y)
        
         #print(escape_pos_x,escape_pos_y,escape_yaw)
 
