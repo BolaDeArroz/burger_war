@@ -82,9 +82,6 @@ def calc_points(side, points, diff):
     if INV_SIDE[side] in diff.values():
         points = init_points(side, diff)
 
-    else:
-        points = open_points(points)
-
     return points
 
 
@@ -110,33 +107,13 @@ def init_points(side, diff):
     return points
 
 
-def open_points(points):
-    clone = points[:]
-
-    for i in range(CELLS):
-        d = clone[i] * K_OPEN_POINTS
-
-        points[i] -= d * len(NEXT_CELL_MAPPING[i])
-
-        for j in NEXT_CELL_MAPPING[i]:
-            points[j] = max(points[j], clone[j] + d)
-
-    return points
-
-
 NODE_NAME = "enemy_pos_from_score"
 
 
 CELLS = 24
 
 
-K_OPEN_POINTS = 0.05
-
-
-INV_SIDE = {
-        "r": "b",
-        "b": "r"
-}
+INV_SIDE = { "r": "b", "b": "r" }
 
 
 INIT_POINTS = {}
@@ -175,36 +152,6 @@ POINT_MAPPING = eval("""
         "OctopusWiener_N":  [15, 16],
         "OctopusWiener_S":  [20, 21]
 }
-""")
-
-
-NEXT_CELL_MAPPING = eval("""
-[
-        [ 1,  3],
-        [ 0,  4],
-        [ 3,  7],
-        [ 0,  2,  4,  8],
-        [ 1,  3,  5,  9],
-        [ 4, 10],
-        [ 7, 12],
-        [ 2,  6,  8, 13],
-        [ 3,  7,  9, 14],
-        [ 4,  8, 10, 15],
-        [ 5,  9, 11, 16],
-        [10, 17],
-        [ 6, 13],
-        [ 7, 12, 14, 18],
-        [ 8, 13, 15, 19],
-        [ 9, 14, 16, 20],
-        [10, 15, 17, 21],
-        [11, 16],
-        [13, 19],
-        [14, 18, 20, 22],
-        [15, 19, 21, 23],
-        [16, 20],
-        [19, 23],
-        [20, 22]
-]
 """)
 
 
