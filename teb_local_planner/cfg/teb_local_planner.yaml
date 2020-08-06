@@ -37,6 +37,7 @@ TebLocalPlannerROS:
  costmap_obstacles_behind_robot_dist: 1.0
  obstacle_poses_affected: 30
  costmap_converter_plugin: ""
+ #costmap_converter_plugin: "costmap_converter::CostmapToPolygonsDBSMCCH"
  costmap_converter_spin_thread: True
  costmap_converter_rate: 5
 
@@ -74,3 +75,7 @@ TebLocalPlannerROS:
  obstacle_keypoint_offset: 0.1
  obstacle_heading_threshold: 0.45
  visualize_hc_graph: False
+
+ # Trajectory
+ global_plan_overwrite_orientation: False
+ allow_init_with_backwards_motion: True

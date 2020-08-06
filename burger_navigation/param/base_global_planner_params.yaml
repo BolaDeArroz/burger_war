@@ -17,3 +17,4 @@ GlobalPlanner:                                  # Also see: http://wiki.ros.org/
   neutral_cost: 50                              # default 50
   cost_factor: 3.0                              # Factor to multiply each cost from costmap by, default 3.0
   publish_potential: true                       # Publish Potential Costmap (this is not like the navfn pointcloud2 potential), default true
+  orientation_mode: 2                           # How to set the orientation of each point (None=0, Forward=1, Interpolate=2, ForwardThenInterpolate=3, Backward=4, Leftward=5, Rightward=6) (dynamic reconfigure) 
