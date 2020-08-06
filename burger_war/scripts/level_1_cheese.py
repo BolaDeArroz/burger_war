@@ -26,7 +26,7 @@ class CheeseBurger():
         self.pose_y = 0
 
         # speed [m/s]
-        self.speed = 0.25
+        self.speed = 0.12
 
         # publisher
         self.vel_pub = rospy.Publisher('cmd_vel', Twist,queue_size=1)
@@ -46,8 +46,13 @@ class CheeseBurger():
         '''
         update wheel rotation num
         '''
-        self.wheel_rot_r = data.position[0]
-        self.wheel_rot_l = data.position[1]
+        # find left and right wheel_state index
+        r_joint_idx = data.name.index("wheel_right_joint")
+        l_joint_idx = data.name.index("wheel_left_joint")
+
+        # update joint state value
+        self.wheel_rot_r = data.position[r_joint_idx]
+        self.wheel_rot_l = data.position[l_joint_idx]
 
     def calcTwist(self):
         '''
@@ -74,7 +79,7 @@ class CheeseBurger():
         '''
         update robot state 'go' or 'back'
         '''
-        if self.state == 'go' and self.wheel_rot_r > 30:
+        if self.state == 'go' and self.wheel_rot_r > 28:
             self.state = 'back'
         elif self.state == 'back' and self.wheel_rot_r < 5:
             self.state = 'go'
