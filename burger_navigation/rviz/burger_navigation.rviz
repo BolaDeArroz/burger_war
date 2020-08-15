@@ -71,6 +71,16 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
+        ball:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_camera:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         base_footprint:
           Alpha: 1
           Show Axes: false
@@ -94,6 +104,46 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+        poll:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        red_plate:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag1-1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag2-1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        tag3-1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         wheel_left_link:
           Alpha: 1
           Show Axes: false
@@ -115,6 +165,10 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        ball:
+          Value: true
+        base_camera:
+          Value: true
         base_footprint:
           Value: true
         base_link:
@@ -123,15 +177,63 @@ Visualization Manager:
           Value: true
         caster_back_link:
           Value: true
+        enemy_bot/ball:
+          Value: true
+        enemy_bot/base_camera:
+          Value: true
         enemy_bot/base_footprint:
           Value: true
+        enemy_bot/base_link:
+          Value: true
+        enemy_bot/base_scan:
+          Value: true
+        enemy_bot/blue_plate:
+          Value: true
+        enemy_bot/caster_back_link:
+          Value: true
+        enemy_bot/imu_link:
+          Value: true
         enemy_bot/odom:
+          Value: true
+        enemy_bot/poll:
+          Value: true
+        enemy_bot/tag1:
+          Value: true
+        enemy_bot/tag1-1:
+          Value: true
+        enemy_bot/tag2:
+          Value: true
+        enemy_bot/tag2-1:
+          Value: true
+        enemy_bot/tag3:
+          Value: true
+        enemy_bot/tag3-1:
+          Value: true
+        enemy_bot/wheel_left_link:
+          Value: true
+        enemy_bot/wheel_right_link:
           Value: true
         imu_link:
           Value: true
         map:
           Value: true
         odom:
+          Value: true
+        poll:
+          Value: true
+        red_plate:
+          Value: true
+        tag1:
+          Value: true
+        tag1-1:
+          Value: true
+        tag2:
+          Value: true
+        tag2-1:
+          Value: true
+        tag3:
+          Value: true
+        tag3-1:
           Value: true
         wheel_left_link:
           Value: true
@@ -147,11 +249,30 @@ Visualization Manager:
           odom:
             base_footprint:
               base_link:
-                base_scan:
+                ball:
                   {}
+                base_camera:
+                  {}
+                base_scan:
+                  red_plate:
+                    {}
                 caster_back_link:
                   {}
                 imu_link:
+                  {}
+                poll:
+                  {}
+                tag1:
+                  {}
+                tag1-1:
+                  {}
+                tag2:
+                  {}
+                tag2-1:
+                  {}
+                tag3:
+                  {}
+                tag3-1:
                   {}
                 wheel_left_link:
                   {}
@@ -231,7 +352,7 @@ Visualization Manager:
       Radius: 0.0299999993
       Shaft Diameter: 0.100000001
       Shaft Length: 0.100000001
-      Topic: /move_base/NavfnROS/plan
+      Topic: /move_base/TebLocalPlannerROS/global_plan
       Unreliable: false
       Value: true
     - Class: rviz/Group

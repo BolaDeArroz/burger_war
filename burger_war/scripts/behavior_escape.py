@@ -4,6 +4,7 @@ import sys
 import math
 import roslib
 import rospy
+import rosparam
 import smach
 import smach_ros
 import tf
@@ -229,20 +230,17 @@ class GoToEscapePoint(smach.State):
         #パラメータ初期化
         self.enemy_pos_from_lider={"enemy_pos":Point(),"is_topic_receive":False}
 
+        #移動時の向きを逃走用(後ろ向き)に設定
+        rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "4")
+
         #逃げる位置計算
         enemy_pos=userdata.enemy_pos_in
         print("enemy_pos",enemy_pos)
-        #中心挟んで相手の反対地点に逃げるパターン
-        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)
         
-        #相手の位置によって反対側の決まった地点に逃げるパターン
-        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)
-        
-        #相手の位置によって反対側の決まった地点に逃げるパターン
-        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v3(enemy_pos.x,enemy_pos.y)
-
-        #相手の位置によって反対側の決まった地点に逃げるパターン
-        escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v4(enemy_pos.x,enemy_pos.y,self.my_pose.pos.x,self.my_pose.pos.y)
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v1(enemy_pos.x,enemy_pos.y)#中心挟んで相手の反対地点に逃げるパターン
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v2(enemy_pos.x,enemy_pos.y)#相手の位置によって反対側の決まった地点に逃げるパターン
+        #escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v3(enemy_pos.x,enemy_pos.y)#相手の位置によって反対側の決まった地点に逃げるパターン
+        escape_pos_x,escape_pos_y,escape_yaw=self.calc_escape_pos_v4(enemy_pos.x,enemy_pos.y,self.my_pose.pos.x,self.my_pose.pos.y)#相手の位置によって反対側の決まった地点に逃げるパターン
        
         #print(escape_pos_x,escape_pos_y,escape_yaw)
 
@@ -266,6 +264,7 @@ class GoToEscapePoint(smach.State):
                     self.vel_pub.publish(Twist())
                     r.sleep()
                 self.is_stop_receive=False
+                rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
                 return 'is_receiveStopSig'
 
             #逃げる途中で、敵と遭遇した場合
@@ -277,12 +276,14 @@ class GoToEscapePoint(smach.State):
                 if dist >= self.CHANGE_ESCAPE_POS_TH: #しきい値を上回っていた場合
                     userdata.enemy_pos_out=self.enemy_pos_from_lider["enemy_pos"]
                     self.move_base_client.cancel_goal()
+                    rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
                     return 'is_NearEnemyFound' #抜ける。再計算されて、目的地が変更される。
 
             
             #TODO:ゴールが壁の中になった時の対応
             r.sleep()
         #目的地についた場合
+        rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
         return 'is_Gone'
 
 
