@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
 
 
-ESCAPE_DISTANCE = 1
+ESCAPE_DISTANCE = 0.8
 
 class BDA_strategy():
     def __init__(self):
