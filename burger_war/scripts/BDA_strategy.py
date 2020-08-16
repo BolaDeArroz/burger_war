@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
 
 
-ESCAPE_DISTANCE = 1.0
+ESCAPE_DISTANCE = 1
 
 class BDA_strategy():
     def __init__(self):
@@ -138,8 +138,8 @@ class BDA_strategy():
 
             x_prev_my_pos = self.my_pose.pos.x
             y_prev_my_pos = self.my_pose.pos.y
-            print('x, y: ', x_prev_my_pos, y_prev_my_pos)
-            print('stag_count: ', stag_count)
+            # print('x, y: ', x_prev_my_pos, y_prev_my_pos)
+            # print('stag_count: ', stag_count)
             
             rospy.sleep(1.0)
 
@@ -278,7 +278,6 @@ class BDA_strategy():
             result = self.all_state_list[2]
             print('****************** stagnation ***************************')
         
-        
         return result
 
 
@@ -286,43 +285,21 @@ class BDA_strategy():
         r=rospy.Rate(5)
         state = ''
         prev_state = ''
-        prev_real_state = ''
+        prev_real_state = self.current_state
         stop_send_result = False
-        preserve_count = 0
         resend_count = 0
         while not rospy.is_shutdown():
             prev_state = state
-            print('state_count : ', preserve_count)
             state = self.evaluate_war_situation()
 
-            # change state
-            if preserve_count > 0:
-                preserve_count = preserve_count-1
-                # print('preserve_count', preserve_count)
-                if preserve_count == 0:
-                    self.pub_state_stop.publish(True)
-                    stop_send_result = True
             # stop topic
-            if state != prev_state and preserve_count <= 0:
-                # change to attack
-                if state == self.all_state_list[0]:
-                    preserve_count = 0
-                # change to escape
-                elif state == self.all_state_list[1]:
-                    preserve_count = 0
-                # change to disturb
-                elif state == self.all_state_list[2]:
-                    preserve_count = 0
-                else:
-                    preserve_count = 0
+            if state != prev_state:
                 stop_send_result = True
 
-                # self.pub_state_stop.publish(True)
-                # stop_send_result = True
             # check chaned result
             if stop_send_result == True:
                 # resend
-                if prev_real_state == self.current_state and resend_count<10:
+                if prev_real_state == self.current_state and resend_count<20:
                     self.pub_state_stop.publish(True)
                     print('++++++++++++ resend +++++++++++++')
                     resend_count = resend_count+1
