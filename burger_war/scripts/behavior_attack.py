@@ -88,8 +88,7 @@ class CommonFunction:
                 (self.my_pose is not None))
 
     def stop_callback(self, data):
-        if data.data:
-            self.is_stop_receive = True
+        self.is_stop_receive = True
 
     def score_callback(self, data):
         self.score = data.data
