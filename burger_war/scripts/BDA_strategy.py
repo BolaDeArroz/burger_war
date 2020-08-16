@@ -16,7 +16,7 @@ from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
 
 
-
+ESCAPE_DISTANCE = 1.0
 
 class BDA_strategy():
     def __init__(self):
@@ -257,7 +257,7 @@ class BDA_strategy():
             result = self.all_state_list[0]
 
         
-        if self.calc_distance_enemy_me() < 0.7:
+        if self.calc_distance_enemy_me() < ESCAPE_DISTANCE:
             result = self.all_state_list[1]
 
         if my_points - enemy_points > 9:
@@ -309,10 +309,10 @@ class BDA_strategy():
                     preserve_count = 0
                 # change to escape
                 elif state == self.all_state_list[1]:
-                    preserve_count = 25
+                    preserve_count = 0
                 # change to disturb
                 elif state == self.all_state_list[2]:
-                    preserve_count = 10
+                    preserve_count = 0
                 else:
                     preserve_count = 0
                 stop_send_result = True
