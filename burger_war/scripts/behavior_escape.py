@@ -264,7 +264,7 @@ class GoToEscapePoint(smach.State):
                     self.vel_pub.publish(Twist())
                     r.sleep()
                 self.is_stop_receive=False
-                rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
+                rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "1")#(None=0, Forward=1, Interpolate=2, ForwardThenInterpolate=3, Backward=4, Leftward=5, Rightward=6)
                 return 'is_receiveStopSig'
 
             #逃げる途中で、敵と遭遇した場合
@@ -276,14 +276,14 @@ class GoToEscapePoint(smach.State):
                 if dist >= self.CHANGE_ESCAPE_POS_TH: #しきい値を上回っていた場合
                     userdata.enemy_pos_out=self.enemy_pos_from_lider["enemy_pos"]
                     self.move_base_client.cancel_goal()
-                    rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
+                    rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "1")#(None=0, Forward=1, Interpolate=2, ForwardThenInterpolate=3, Backward=4, Leftward=5, Rightward=6)
                     return 'is_NearEnemyFound' #抜ける。再計算されて、目的地が変更される。
 
             
             #TODO:ゴールが壁の中になった時の対応
             r.sleep()
         #目的地についた場合
-        rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "0")
+        rosparam.set_param("/move_base/GlobalPlanner/orientation_mode", "1")#(None=0, Forward=1, Interpolate=2, ForwardThenInterpolate=3, Backward=4, Leftward=5, Rightward=6)
         return 'is_Gone'
 
 
