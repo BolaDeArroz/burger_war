@@ -16,7 +16,11 @@ from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
 
 
-ESCAPE_DISTANCE = 0.8
+ESCAPE_DISTANCE = 0.9
+
+CONTINUE_ATTACK_TIME = 0
+CONTINUE_ESCAPE_TIME = 25
+CONTINUE_DISTURB_TIME = 0
 
 class BDA_strategy():
     def __init__(self):
@@ -202,7 +206,7 @@ class BDA_strategy():
 
 
     def calc_distance_enemy_me(self):
-        _dis = 1.0
+        _dis = 2.0
         if self.enemy_pos_from_lider["is_topic_receive"] ==False:
             return _dis
         try:
@@ -286,15 +290,31 @@ class BDA_strategy():
         state = ''
         prev_state = ''
         prev_real_state = self.current_state
+        preserve_count = 0
         stop_send_result = False
         resend_count = 0
         while not rospy.is_shutdown():
             prev_state = state
             state = self.evaluate_war_situation()
-
+            # print('preserve_count: ', preserve_count)
+            if preserve_count > 0:
+                preserve_count = preserve_count-1
+                if preserve_count <= 0:
+                    stop_send_result = True
             # stop topic
-            if state != prev_state:
+            if state != prev_state and preserve_count <= 0:
                 stop_send_result = True
+                # change to attack
+                if state == self.all_state_list[0]:
+                    preserve_count = CONTINUE_ATTACK_TIME
+                # change to escape
+                elif state == self.all_state_list[1]:
+                    preserve_count = CONTINUE_ESCAPE_TIME
+                # change to disturb
+                elif state == self.all_state_list[2]:
+                    preserve_count = CONTINUE_DISTURB_TIME
+                else:
+                    preserve_count = 0
 
             # check chaned result
             if stop_send_result == True:
