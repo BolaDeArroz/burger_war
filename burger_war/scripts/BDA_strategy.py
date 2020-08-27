@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import cv2
 import numpy as np
 import json
 import rospy
@@ -11,16 +10,16 @@ import threading
 import smach_ros
 
 from smach_msgs.msg import SmachContainerStatus,SmachContainerInitialStatusCmd,SmachContainerStructure
-from std_msgs.msg import Float32MultiArray, Time, String, Bool, Int32MultiArray
+from std_msgs.msg import Float32MultiArray, Time, String, Bool, Int32MultiArray, Int32
 from geometry_msgs.msg import Point
 from burger_war.msg import MyPose 
-
 
 ESCAPE_DISTANCE = 0.9
 
 CONTINUE_ATTACK_TIME = 0
 CONTINUE_ESCAPE_TIME = 25
 CONTINUE_DISTURB_TIME = 0
+
 
 class BDA_strategy():
     def __init__(self):
@@ -73,6 +72,9 @@ class BDA_strategy():
         self.sub_enemy_pose_from_camera = rospy.Subscriber('/{}/enemy_pose_from_camera'.format(self.name), MyPose, self.enemy_pose_from_camera_callback)
         self.enemy_pose_from_camera = MyPose()
 
+        self.sub_ai_next_decition = rospy.Subscriber('/{}/ai_next_decition'.format(self.name), Int32, self.ai_next_decition_callback)
+        self.ai_next_decition = 0
+
         self.current_state = None
 
         # pub
@@ -89,20 +91,22 @@ class BDA_strategy():
         self._check_stagnation_thread = threading.Thread(target=self._check_stagnation)
         self._check_stagnation_thread.start()
 
+        
+
 
     def score_callback(self, data):
         self.score = data.data
 
     def my_pose_callback(self,data):
         self.my_pose = data
-
+        
     def enemy_pos_from_lider_callback(self,data):
         self.enemy_pos_from_lider["enemy_pos"]=data
         self.enemy_pos_from_lider["is_topic_receive"]=True
-
+        
     def enemy_pose_from_camera_callback(self, data):
         self.enemy_pose_from_camera = data
-
+        
     def enemy_pos_from_score_callback(self,data):
         self.enemy_pos_from_score=data
     
@@ -117,6 +121,12 @@ class BDA_strategy():
         if data.path == '/SM_ROOT':
             self.current_state = data.active_states[0]
             # print('current state', self.current_state[0])
+
+    def ai_next_decition_callback(self, data):
+        """
+        self_play用のnext decition
+        """
+        self.ai_next_decition = data.data
 
 
     def _check_stagnation(self):
@@ -331,12 +341,50 @@ class BDA_strategy():
             # change state topic
             self.pub_strategy.publish(state)
             r.sleep()
+            
+
+    def self_play_run(self):
+        r=rospy.Rate(0.5)
+        state = ''
+        prev_state = ''
+        prev_real_state = self.current_state
+        stop_send_result = False
+        resend_count = 0
+        while not rospy.is_shutdown():
+            prev_state = state
+            # self_playからnext action topicを取得
+            state = self.all_state_list[self.ai_next_decition]
+            print('self.ai_next_decition', self.ai_next_decition, 'state', state)
+            # stop topic
+            if state != prev_state:
+                stop_send_result = True
+            # check chaned result
+            if stop_send_result == True:
+                # resend
+                if prev_real_state == self.current_state and resend_count<20:
+                    self.pub_state_stop.publish(True)
+                    print('++++++++++++ resend +++++++++++++')
+                    resend_count = resend_count+1
+                else:
+                    stop_send_result = False
+                    prev_real_state = self.current_state
+                    resend_count = 0
+            
+            # change state topic
+            self.pub_strategy.publish(state)
+            r.sleep()
 
 
+
+is_ai_play = True
 if __name__ == "__main__":
     rospy.init_node("BDA_strategy")
     bda_strategy = BDA_strategy()
-    bda_strategy.strategy_run()
+    if is_ai_play:
+        bda_strategy.self_play_run()
+    else:
+        bda_strategy.strategy_run()
+        
 
 
 

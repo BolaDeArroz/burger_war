@@ -26,6 +26,9 @@
     </node>
     <node pkg="burger_war" type="enemy_pos_from_lider.py" name="enemy_pos_from_lider" output="screen"> 
     </node>
+    <!-- add ai strategy -->
+    <node pkg="burger_war" type="ai_play.py" name="ai_play" output="screen"> 
+    </node>
     <node pkg="burger_war" type="enemy_pos_from_score.py" name="enemy_pos_from_score" output="screen">
         <param name="topic_ws" value="war_state" />
         <param name="side" value="$(arg side)" />
