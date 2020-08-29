@@ -66,32 +66,49 @@ class enemy_pos_from_lider:
         self.last_marker.pose.position.y= 0
         self.enemy_last_marker_pub = rospy.Publisher('enemy_pos_from_lider_last_marker',Marker,queue_size=1)
 
-        # オブジェクトマーカー
-#        self.object_marker=Marker()
-#        self.object_marker.header.frame_id="map"
-#        self.object_marker.ns = "basic_shapes"
-#        self.object_marker.scale.z=0.100
-#        self.object_marker.pose.position.x= 0
-#        self.object_marker.pose.position.y= 0
-#        self.object_marker.scale.x=self.object_marker.scale.y=0.35
-#        self.object_marker.pose.position.x= -0.53
-#        self.object_marker.pose.position.y= -0.53
-#        self.object_marker.scale.x=0.15
-#        self.object_marker.scale.y=0.20
-#        self.object_marker.color.a=1.0
-#        self.object_marker.color.b=1.0
-#        self.object_marker.color.r=1.0
-#        self.object_marker.type=Marker.CUBE
-#        self.object_marker.action = Marker.ADD
-#        self.object_marker_pub = rospy.Publisher('enemy_pos_from_lider_object_marker',Marker,queue_size=1)
+        self.enemy_potential_array=np.zeros((240,240))#10mm毎
 
     def obstacle_callback(self, data):
         self.obstacles=data
+
+    def enemy_pos_move_avg(self,x,y,potential):
+        margin=5 #margin+-50mm 発見地の周辺何mmまで確率付与するか
+
+        x_idx_max=self.enemy_potential_array.shape[0]-1
+        y_idx_max=self.enemy_potential_array.shape[1]-1
+
+        rot_x=x*math.cos(math.radians(45))-y*math.sin(math.radians(45))
+        rot_y=x*math.sin(math.radians(45))+y*math.cos(math.radians(45))
+        rot_x=(rot_x+1.2)*100 #m->10mm
+        rot_y=(rot_y+1.2)*100 #m->10mm
+        if(rot_x>=x_idx_max):rot_x=self.enemy_potential_array[0]-1
+        elif(rot_x<=0):rot_x=0
+        if(rot_y>=y_idx_max):rot_y=self.enemy_potential_array[1]-1
+        elif(rot_y<=0):rot_y=0
+        x_start=int(0 if rot_x-margin<=  0 else rot_x-margin)
+        x_end  =int(x_idx_max-1 if rot_x+margin>=x_idx_max-1 else rot_x+margin)
+        y_start=int(0 if rot_y-margin<=  0 else rot_y-margin)
+        y_end  =int(y_idx_max-1 if rot_y+margin>=y_idx_max-1 else rot_y+margin)
+        self.enemy_potential_array[x_start:x_end,y_start:y_end]=self.enemy_potential_array[x_start:x_end,y_start:y_end]+potential #+確率
+
+        max_idx=np.unravel_index(np.argmax(self.enemy_potential_array),self.enemy_potential_array.shape)
+        print(self.enemy_potential_array[max_idx])
+        if (self.enemy_potential_array[max_idx]>=100):
+            origin_x=float(max_idx[0])/100-1.2
+            origin_y=float(max_idx[1])/100-1.2
+            #print(origin_x,origin_y)
+            ori_x=origin_x*math.cos(math.radians(-45))-origin_y*math.sin(math.radians(-45))
+            ori_y=origin_x*math.sin(math.radians(-45))+origin_y*math.cos(math.radians(-45))
+             #print(ori_x,ori_y)
+            return True,ori_x,ori_y
+        return False,0,0
 
 
     def run(self):
 
         r=rospy.Rate(5)
+
+
         while not rospy.is_shutdown():
 #            self.object_marker_pub.publish(self.object_marker)
             obstacles=self.obstacles
@@ -105,40 +122,54 @@ class enemy_pos_from_lider:
                 radius_mergin=0.0#半径
                 center_mergin=0.15#センター
                 cornar_mergin=0.2#コーナー
-                wall_mergin=0.0#壁
+                wall_mergin=0.05#壁
+                potential=80#敵確率初期値
                 
                 #フィルタリング
                 #障害物の半径が10センチ以上か
                 if(obs.radius>=0.10-radius_mergin):
                     continue
+                elif(obs.radius>=0.10):
+                    potential=50
+                    
                 #センターオブジェクトか
                 if(abs(enemy_pos.x) <=0.175+center_mergin and abs(enemy_pos.y) <=0.175+center_mergin):
-                #    print("is_center",enemy_pos)
                     continue
+                elif(abs(enemy_pos.x) <=0.175 and abs(enemy_pos.y) <=0.175 ):
+                    potential=30
+
                 #コーナーオブジェクトか
                 if((abs(enemy_pos.x) >=0.430-cornar_mergin and abs(enemy_pos.x) <=0.640+cornar_mergin) and \
                    (abs(enemy_pos.y) >=0.455-cornar_mergin and abs(enemy_pos.y) <=0.605+cornar_mergin)):
-                #    print("is_corner",enemy_pos)
                     continue
-                #壁か
-                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.650-wall_mergin):
+                elif((abs(enemy_pos.x) >=0.430 and abs(enemy_pos.x) <=0.640) and \
+                   (abs(enemy_pos.y) >=0.455 and abs(enemy_pos.y) <=0.605)):
+                    potential=30
+                #壁か(2400*ルート2/2=1.697)
+                if((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.697-wall_mergin):
                 #    print("is_wall",enemy_pos)
                     continue
+                elif((abs(enemy_pos.y)+abs(enemy_pos.x)) >=1.697):
+                    potential=50
+                
+                is_enemy_ext,x,y=self.enemy_pos_move_avg(enemy_pos.x,enemy_pos.y,potential)
 
+                if is_enemy_ext:
+                    self.pub_enemy_pos.publish(Point(x,y,0))
+                    self.last_enemy_pos=enemy_pos                
 
-                self.pub_enemy_pos.publish(enemy_pos)
-                self.last_enemy_pos=enemy_pos                
+                    #敵位置マーカー
+                    self.marker.pose.position=obs.center
+                    self.marker.header.stamp = rospy.Time.now()
+                    self.marker.id = 1
+                    self.marker.color.r=1.0
+                    self.marker.color.b=0.0                
+                    self.marker.lifetime=rospy.Duration(0.1)
+                    self.enemy_marker_pub.publish(self.marker)
+                    self.last_marker=self.marker
 
-                #敵位置マーカー
-                self.marker.pose.position=obs.center
-                self.marker.header.stamp = rospy.Time.now()
-                self.marker.id = 1
-                self.marker.color.r=1.0
-                self.marker.color.b=0.0                
-                self.marker.lifetime=rospy.Duration(0.5)
-                self.enemy_marker_pub.publish(self.marker)
-                self.last_marker=self.marker
-
+            self.enemy_potential_array=self.enemy_potential_array*0.7#減衰
+            self.enemy_potential_array=self.enemy_potential_array.clip(0,100)
             self.pub_last_enemy_pos.publish(self.last_enemy_pos)
 
             #最終敵位置マーカー
