@@ -9,7 +9,7 @@ TebLocalPlannerROS:
  dt_ref: 0.3
  dt_hysteresis: 0.1
  global_plan_overwrite_orientation: True
- max_global_plan_lookahead_dist: 1.0
+ max_global_plan_lookahead_dist: 0.5
  feasibility_check_no_poses: 5
     
  # Robot
@@ -77,5 +77,4 @@ TebLocalPlannerROS:
  visualize_hc_graph: False
 
  # Trajectory
- global_plan_overwrite_orientation: True
  allow_init_with_backwards_motion: True

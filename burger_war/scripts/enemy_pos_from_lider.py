@@ -92,7 +92,7 @@ class enemy_pos_from_lider:
         self.enemy_potential_array[x_start:x_end,y_start:y_end]=self.enemy_potential_array[x_start:x_end,y_start:y_end]+potential #+確率
 
         max_idx=np.unravel_index(np.argmax(self.enemy_potential_array),self.enemy_potential_array.shape)
-        print(self.enemy_potential_array[max_idx])
+        #print(self.enemy_potential_array[max_idx])
         if (self.enemy_potential_array[max_idx]>=100):
             origin_x=float(max_idx[0])/100-1.2
             origin_y=float(max_idx[1])/100-1.2

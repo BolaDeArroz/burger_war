@@ -286,7 +286,7 @@ class BDA_strategy():
 
 
     def strategy_run(self):
-        r=rospy.Rate(5)
+        r=rospy.Rate(1)
         state = ''
         prev_state = ''
         prev_real_state = self.current_state
